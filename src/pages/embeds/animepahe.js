@@ -104,11 +104,11 @@ async function loadAnimeContent(animeName, episode, season, container, params) {
   const linksStep = window.splashScreen?.addStep('Fetching streaming links...');
 
   const linksResponse = await fetch(`https://anime.apex-cloud.workers.dev/?method=episode&session=${bestMatch.session}&ep=${episodeData.session}`);
-  const linksData = await linksResponse.json();
+  const qualityOptions = await linksResponse.json();
 
   window.splashScreen?.completeStep(linksStep);
 
-  if (!linksData || linksData.length === 0) {
+  if (!qualityOptions || qualityOptions.length === 0) {
     throw new Error('No streaming links found');
   }
 
@@ -122,7 +122,7 @@ async function loadAnimeContent(animeName, episode, season, container, params) {
 
     const m3u8Step = window.splashScreen?.addStep('Preparing video stream...');
     
-    fetchKwikVideoUrl(linksData[0].link)
+    fetchKwikVideoUrl(qualityOptions[0].link)
       .then(videoUrl => {
         window.splashScreen?.completeStep(m3u8Step);
         if (window.splashScreen) {
@@ -130,7 +130,7 @@ async function loadAnimeContent(animeName, episode, season, container, params) {
         }
         
         if (videoUrl) {
-          renderVideoPlayer(playerContainer, videoUrl, 'Auto', linksData, params.episodeId, params.episodeId);
+          renderVideoPlayer(playerContainer, videoUrl, 'Auto', qualityOptions, params.episodeId, params.episodeId);
         } else {
           playerContainer.innerHTML = `
             <div class="flex justify-center items-center h-full">

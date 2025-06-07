@@ -1,6 +1,6 @@
 export function generatePlayerHTML(config) {
   const isIPhone = /iPhone/i.test(navigator.userAgent);
-  const hasQualityOptions = config.qualityOptions.length > 0 || (Array.isArray(config.linksData) && config.linksData.length > 0);
+  const hasQualityOptions = config.qualityOptions.length > 0;
   
   // Generate video or iframe element based on embed type
   const mediaElement = config.isIframeEmbed ? 
@@ -8,7 +8,7 @@ export function generatePlayerHTML(config) {
       id="custom-player" 
       class="w-full h-full border-none" 
       allowfullscreen
-      src="${config.linksData.length > 0 ? config.linksData[0].url : ''}"
+      src="${config.qualityOptions.length > 0 ? config.qualityOptions[0].url : ''}"
     ></iframe>` :
     `<video 
       id="custom-player"
@@ -48,9 +48,9 @@ export function generatePlayerHTML(config) {
       </div>
       
       ${config.features.preview ? `
-      <div class="video-preview hidden opacity-0 absolute bg-black rounded-lg shadow-lg z-[30] transition-opacity duration-300 pointer-events-none" style="width: 160px; height: 90px; transform: translateX(-50%) translateY(-100%) translateY(-10px); bottom: 50px;">
+      <div class="video-preview hidden opacity-0 absolute bg-black rounded-lg shadow-lg z-[30] transition-opacity duration-300 pointer-events-none" style="width: 160px; height:80px; transform: translateX(-50%) translateY(-100%) translateY(-10px); bottom: 50px;">
         <canvas id="preview-canvas" width="160" height="90"></canvas>
-        <div class="preview-time text-text-primary text-xs text-center py-1 bg-black bg-opacity-75"></div>
+        <div class="preview-time text-text-primary text-xs text-center py-1 bottom-0 absolute w-full rounded-b-lg" style="filter: drop-shadow(0 2px 1px black) drop-shadow(0 2px 6px black) drop-shadow(0 0 6px black)"></div>
       </div>
       ` : ''}
       

@@ -1,4 +1,4 @@
-export function setupPreviewVideo(videoPreview, player, progressContainerHitbox, progressContainer, previewTime, linksData, isNativeEmbed = false, fetchVideoUrlCallback = null) {
+export function setupPreviewVideo(videoPreview, player, progressContainerHitbox, progressContainer, previewTime, qualityOptions, isNativeEmbed = false) {
   let previewReady = false;
   let isHoveringProgressContainer = false;
   
@@ -20,39 +20,44 @@ export function setupPreviewVideo(videoPreview, player, progressContainerHitbox,
     return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
   };
   
-  const getLowestSizeVideoLink = () => {
-    if (!linksData || linksData.length === 0) return null;
+  const getLowestQualityVideoLink = () => {
+    const dataSource = qualityOptions; // pure laziness
     
-    if (isNativeEmbed) {
-      const sortedOptions = [...linksData].sort((a, b) => {
-        const resA = parseInt(a.name.replace(/[Pp]/g, '')) || 0;
-        const resB = parseInt(b.name.replace(/[Pp]/g, '')) || 0;
-        return resA - resB;
-      });
-      
-      return sortedOptions[0]?.url || null;
-    } 
-    
-    let lowestSizeLink = linksData[0];
-    let lowestSize = Infinity;
-    
-    for (const link of linksData) {
-      const sizeMatch = link.name.match(/\((\d+)MB\)/);
-      if (sizeMatch && sizeMatch[1]) {
-        const size = parseInt(sizeMatch[1]);
-        if (size < lowestSize) {
-          lowestSize = size;
-          lowestSizeLink = link;
-        }
-      }
+    if (!dataSource || dataSource.length === 0) {
+      console.log('No lowest quality found');
+      return null;
     }
     
-    return lowestSizeLink.link;
+     const qualityOptionsWithResolution = dataSource.filter(option => {
+       const name = option.name ? option.name.toLowerCase() : '';
+       return name !== 'auto' && (/\d+p/.test(name) || name.includes('144p'));
+     });
+    
+    if (qualityOptionsWithResolution.length === 0) {
+      console.log('No lowest quality found');
+      return null;
+    }
+    
+    // Sort by resolution number (ascending to get lowest first)
+    const sortedOptions = qualityOptionsWithResolution.sort((a, b) => {
+      const resA = parseInt(a.name.match(/\d+/)?.[0]) || 0;
+      const resB = parseInt(b.name.match(/\d+/)?.[0]) || 0;
+      return resA - resB;
+    });
+    
+    const lowestQuality = sortedOptions[0];
+    
+    if (isNativeEmbed) {
+      return lowestQuality.url || null;
+    } else {
+      // For animepahe and zenime embeds
+      return lowestQuality.url || lowestQuality.link || null;
+    }
   };
   
   const loadPreviewVideo = async () => {
     try {
-      const videoSource = getLowestSizeVideoLink();
+      const videoSource = getLowestQualityVideoLink();
       if (!videoSource) return;
       
       if (isNativeEmbed) {
@@ -60,21 +65,51 @@ export function setupPreviewVideo(videoPreview, player, progressContainerHitbox,
         previewVideo.addEventListener('loadedmetadata', () => {
           previewReady = true;
         });
-      } else if (fetchVideoUrlCallback) {
-        const previewVideoUrl = await fetchVideoUrlCallback(videoSource);
-        if (previewVideoUrl) {
-          previewVideo.src = previewVideoUrl;
-          previewVideo.addEventListener('loadedmetadata', () => {
-            previewReady = true;
-          });
+      } else if (qualityOptions.fetchVideoUrlCallback) {
+        console.log(videoSource)
+        const fetchVideoUrlCallback = qualityOptions.fetchVideoUrlCallback
+
+        if (videoSource.includes('kwik.si')) {
+          const previewVideoUrl = await fetchVideoUrlCallback(videoSource);
+          if (previewVideoUrl) {
+            previewVideo.src = previewVideoUrl;
+            previewVideo.addEventListener('loadedmetadata', () => {
+              previewReady = true;
+            });
+          } else {
+            console.error('Failed to fetch preview video URL from kwik.cx');
+          }
+        } else {
+          // For other URLs, try the callback first, fallback to direct URL
+          const previewVideoUrl = await fetchVideoUrlCallback(videoSource);
+          if (previewVideoUrl) {
+            previewVideo.src = previewVideoUrl;
+            previewVideo.addEventListener('loadedmetadata', () => {
+              previewReady = true;
+            });
+          } else {
+            // Fallback to direct URL if callback fails
+            previewVideo.src = videoSource;
+            previewVideo.addEventListener('loadedmetadata', () => {
+              previewReady = true;
+            });
+          }
         }
+      } else {
+        // No callback available, use direct URL
+        previewVideo.src = videoSource;
+        previewVideo.addEventListener('loadedmetadata', () => {
+          previewReady = true;
+        });
       }
     } catch (error) {
       console.error('Error loading preview video:', error);
     }
   };
-  
-  if (linksData && linksData.length > 0) {
+
+  console.log(qualityOptions);
+    
+  if ((qualityOptions && qualityOptions.length > 0)) {
     loadPreviewVideo();
   }
   

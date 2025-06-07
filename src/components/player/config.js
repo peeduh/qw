@@ -31,7 +31,6 @@ export class PlayerConfig {
     };
     
     // Data sources
-    this.linksData = options.linksData || [];
     this.subtitleTracks = options.subtitleTracks || [];
     this.qualityOptions = options.qualityOptions || [];
   }

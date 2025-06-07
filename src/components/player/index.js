@@ -12,33 +12,6 @@ import { setupSkipButtons } from './ui/skipButtons.js';
 import { PlayerConfig } from './config.js';
 import { generatePlayerHTML } from './template.js';
 
-// Backward compatibility - keep the old function signature
-export function initializeCustomPlayer(playerContainer, linksData, showId, episodeNumber, isNativeEmbed = false, subtitleTracks = [], mediaType = 'tv') {
-  const config = new PlayerConfig({
-    showId,
-    episodeNumber,
-    mediaType,
-    isNativeEmbed,
-    linksData,
-    subtitleTracks,
-    qualityOptions: Array.isArray(linksData) ? linksData : [],
-    features: {
-      qualitySelector: true, // Always enable quality selector
-      subtitles: true, // Always enable subtitles
-      download: true,
-      preview: true,
-      skipButtons: true,
-      aspectToggle: true,
-      pip: true
-    },
-    callbacks: {
-      fetchVideoUrl: linksData?.fetchVideoUrlCallback
-    }
-  });
-  
-  return initializePlayer(playerContainer, config);
-}
-
 // Main initialization function
 export async function initializePlayer(playerContainer, config) {
   if (!(config instanceof PlayerConfig)) {
@@ -155,7 +128,7 @@ async function initializePlayerFeatures(elements, config, isIPhone) {
       elements.progressContainerHitbox, 
       elements.progressContainer, 
       elements.previewTime, 
-      config.linksData, 
+      config.qualityOptions, 
       config.isNativeEmbed
     );
   }
@@ -199,8 +172,8 @@ async function initializePlayerFeatures(elements, config, isIPhone) {
       elements.player,
       elements.customPlayer,
       {
-        qualityOptions: config.features.qualitySelector && (config.qualityOptions.length > 0 || config.linksData.length > 0) 
-          ? (config.qualityOptions.length > 0 ? config.qualityOptions : config.linksData) 
+        qualityOptions: config.features.qualitySelector && (config.qualityOptions.length > 0) 
+          ? config.qualityOptions 
           : [],
         subtitleTracks: config.features.subtitles ? config.subtitleTracks : [],
         isIPhone,
@@ -213,7 +186,7 @@ async function initializePlayerFeatures(elements, config, isIPhone) {
   
   // Download functionality
   if (config.features.download && elements.downloadBtn) {
-    setupDownloadVideo(elements.downloadBtn, elements.player, config.linksData);
+    setupDownloadVideo(elements.downloadBtn, elements.player);
   }
   
   return handlers;

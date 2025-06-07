@@ -1,4 +1,4 @@
-export function setupDownloadVideo(downloadBtn, player, linksData) {
+export function setupDownloadVideo(downloadBtn, player) {
   if (!downloadBtn) return;
   
   downloadBtn.addEventListener('click', () => {
