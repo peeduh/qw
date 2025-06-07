@@ -59,6 +59,11 @@ async function loadVideoContent(id, episode, season, type, container) {
         const subtitleTracks = streamData.tracks || [];
         const hasMultiQuality = streamData.hasMultiQuality === true;
         const qualityOptions = streamData.quality || [];
+
+        const enhancedQualityOptions = qualityOptions.map(option => ({
+          name: option.quality,
+          url: option.url
+        }));
         
         window.splashScreen?.completeStep(videoStep);
         if (window.splashScreen) {
@@ -74,7 +79,7 @@ async function loadVideoContent(id, episode, season, type, container) {
             isNativeEmbed: true,
             autoplay: true,
             subtitleTracks,
-            qualityOptions: qualityOptions || [],
+            qualityOptions: enhancedQualityOptions || [],
             features: {
               qualitySelector: true, // Always enable quality selector
               subtitles: true, // Always enable subtitles

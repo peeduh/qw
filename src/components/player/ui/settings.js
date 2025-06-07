@@ -26,6 +26,12 @@ export function setupSettingsMenu(settingsBtn, settingsMenu, player, customPlaye
   
   const speedOptions = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
   
+  const formatQualityOption = (optionName) => {
+    return optionName
+      .replace('SubsPlease', 'SubsPls')
+      .replace('Bunny-Apocalypse', 'Bunny');
+  };
+  
   const createSubtitleContainer = () => {
     if (subtitleContainer) return subtitleContainer;
     
@@ -329,7 +335,7 @@ export function setupSettingsMenu(settingsBtn, settingsMenu, player, customPlaye
         <div class="quality-options space-y-1">
           ${qualityOptions.map((option, index) => `
             <button class="quality-option group w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg transition-all duration-300 ease-out border border-transparent text-text-secondary hover:text-text-primary hover:bg-background-tertiary hover:border-button-primary hover:-translate-y-px" data-index="${index}" data-url="${option.url}" data-quality="${option.name}">
-              <span class="font-medium">${option.name}</span>
+              <span class="font-medium">${formatQualityOption(option.name)}</span>
               <div class="relative">
                 <div class="w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all duration-300 border-button-primary">
                   <div class="w-2 h-2 rounded-full hidden quality-selected bg-accent"></div>
