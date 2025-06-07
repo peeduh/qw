@@ -151,13 +151,24 @@ async function loadMediaDetails(type, id) {
     }
 
     const defaultSource = sources[initialSourceIndex];
-    const iframeUrl = type === 'movie' 
-      ? defaultSource.movieUrl 
-          .replace('{id}', String(id))
-      : defaultSource.tvUrl
-          .replace('{id}', String(id))
-          .replace('{season}', String(initialSeason))
-          .replace('{episode}', String(initialEpisode));
+    let iframeUrl;
+    if (type === 'movie') {
+      iframeUrl = defaultSource.movieUrl
+        .replace('{id}', String(id));
+    } else {
+      iframeUrl = defaultSource.tvUrl
+        .replace('{id}', String(id))
+        .replace('{season}', String(initialSeason))
+        .replace('{episode}', String(initialEpisode));
+      
+      // Special handling for animepahe source
+      if (defaultSource.name === 'Pahe (Anime)') {
+        const mediaName = data.title || data.name;
+        iframeUrl = iframeUrl
+          .replace('{urlepisodeId}', encodeURIComponent(String(id)))
+          .replace('{name}', encodeURIComponent(mediaName));
+      }
+    }
     
     // genres
     const genresText = data.genres?.slice(0, 2).map(genre => genre.name.toUpperCase()).join('  ') || '';
@@ -348,7 +359,7 @@ async function loadMediaDetails(type, id) {
       });
     }
 
-    initPlayerModal(id, type, sources, initialSourceIndex, initialSeason, initialEpisode, true);
+    initPlayerModal(id, type, sources, initialSourceIndex, initialSeason, initialEpisode, true, data.title || data.name);
     
     if (type === 'tv') {
       const playButton = document.getElementById('play-button');
@@ -369,7 +380,7 @@ async function loadMediaDetails(type, id) {
               if (modal) {
                 const modalContent = renderPlayerModal(type, id, sources, initialSourceIndex, nextSeason, nextEpisode, data.title || data.name, true);
                 modal.outerHTML = modalContent;
-                initPlayerModal(id, type, sources, initialSourceIndex, nextSeason, nextEpisode, true);
+                initPlayerModal(id, type, sources, initialSourceIndex, nextSeason, nextEpisode, true, data.title || data.name);
                 
                 document.getElementById('player-modal').classList.remove('hidden');
                 return;

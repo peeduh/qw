@@ -1,6 +1,4 @@
-import { fetchKwikVideoUrl } from '../videoUtils.js';
-
-export function setupPreviewVideo(videoPreview, player, progressContainerHitbox, progressContainer, previewTime, linksData, isNativeEmbed = false) {
+export function setupPreviewVideo(videoPreview, player, progressContainerHitbox, progressContainer, previewTime, linksData, isNativeEmbed = false, fetchVideoUrlCallback = null) {
   let previewReady = false;
   let isHoveringProgressContainer = false;
   
@@ -62,8 +60,8 @@ export function setupPreviewVideo(videoPreview, player, progressContainerHitbox,
         previewVideo.addEventListener('loadedmetadata', () => {
           previewReady = true;
         });
-      } else {
-        const previewVideoUrl = await fetchKwikVideoUrl(videoSource);
+      } else if (fetchVideoUrlCallback) {
+        const previewVideoUrl = await fetchVideoUrlCallback(videoSource);
         if (previewVideoUrl) {
           previewVideo.src = previewVideoUrl;
           previewVideo.addEventListener('loadedmetadata', () => {

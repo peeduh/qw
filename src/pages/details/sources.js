@@ -47,6 +47,6 @@ export const sources = [
     {
       name: 'Pahe (Anime)',
       tvOnly: true,
-      tvUrl: `/embed/animepahe/{id}/{season}/{episode}`
+      tvUrl: `/embed/animepahe/{urlepisodeId}/{name}/{season}/{episode}`
     }
   ];

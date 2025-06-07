@@ -110,7 +110,7 @@ export function renderPlayerModal(type, id, sources, initialSourceIndex, initial
   }
 }
 
-export function initPlayerModal(id, type, sources, initialSourceIndex, initialSeason, initialEpisode, isMobile = false) {
+export function initPlayerModal(id, type, sources, initialSourceIndex, initialSeason, initialEpisode, isMobile = false, mediaTitle = '') {
   // play button and modal
   const playButton = document.getElementById('play-button');
   const playerModal = document.getElementById('player-modal');
@@ -136,12 +136,22 @@ export function initPlayerModal(id, type, sources, initialSourceIndex, initialSe
     
     // use current values from global state
     const selectedSource = sources[sourceIndex];
-    const iframeUrl = type === 'movie' 
-      ? selectedSource.movieUrl.replace('{id}', id)
-      : selectedSource.tvUrl
-          .replace('{id}', id)
-          .replace('{season}', window.currentPlayerSeason)
-          .replace('{episode}', window.currentPlayerEpisode);
+    let iframeUrl;
+    if (type === 'movie') {
+      iframeUrl = selectedSource.movieUrl.replace('{id}', id);
+    } else {
+      iframeUrl = selectedSource.tvUrl
+        .replace('{id}', id)
+        .replace('{season}', window.currentPlayerSeason)
+        .replace('{episode}', window.currentPlayerEpisode);
+      
+      // Special handling for animepahe source
+      if (selectedSource.name === 'Pahe (Anime)') {
+        iframeUrl = iframeUrl
+          .replace('{urlepisodeId}', encodeURIComponent(String(id)))
+          .replace('{name}', encodeURIComponent(mediaTitle));
+      }
+    }
 
     let episodeTitle = '';
     if (type === 'tv') {

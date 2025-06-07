@@ -22,8 +22,8 @@ export const animeSources = [
   {
     id: 'animepahe',
     name: 'pahe',
-    subUrl: '/embed/animepahev2/{urlepisodeId}/{name}/{season}/{episode}',
-    dubUrl: '/embed/animepahev2/{urlepisodeId}/{name}/{season}/{episode}'
+    subUrl: '/embed/animepahe/{urlepisodeId}/{name}/{season}/{episode}',
+    dubUrl: '/embed/animepahe/{urlepisodeId}/{name}/{season}/{episode}'
   },
   {
     id: 'aniplay',

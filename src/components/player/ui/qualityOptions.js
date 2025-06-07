@@ -1,130 +1,161 @@
-import { renderSpinner } from '../../misc/loading.js';
-import { fetchKwikVideoUrl } from '../videoUtils.js';
+// Utility functions for video quality options
+import Hls from 'hls.js';
 
-export function setupQualityOptions(qualityMenu, iphoneQualityMenu, qualityBtn, qualityToggleBtn, player, customPlayer, linksData, isIPhone, isNativeEmbed = false) {
-  if (!linksData || linksData.length === 0) {
-    if (qualityBtn) {
-      qualityBtn.parentElement.classList.add('hidden');
-    }
-    if (qualityToggleBtn) {
-      qualityToggleBtn.classList.add('hidden');
-    }
+export function setupQualityOptions(
+  qualityMenu, iphoneQualityMenu, qualityBtn, qualityToggleBtn, 
+  player, customPlayer, qualityOptions, isIPhone, isNativeEmbed, 
+  fetchVideoUrlCallback = null, // New parameter for callback function
+  isIframeEmbed = false // New parameter to indicate if using iframe embeds
+) {
+  if (!qualityOptions || qualityOptions.length <= 1) {
+    if (qualityBtn) qualityBtn.parentElement.classList.add('hidden');
+    if (qualityToggleBtn) qualityToggleBtn.classList.add('hidden');
     return;
   }
   
-  let qualityOptionsHTML = '';
+  // Show quality button
+  if (qualityBtn) qualityBtn.parentElement.classList.remove('hidden');
+  if (qualityToggleBtn) qualityToggleBtn.classList.remove('hidden');
   
-  qualityOptionsHTML = linksData.map((quality, index) => {
-    return `
-      <div class="quality-option cursor-pointer hover:bg-zinc-800 p-2 rounded text-white text-sm" data-index="${index}">
-        ${quality.name || 'Auto'}
-      </div>
-    `;
-  }).join('');
+  // Populate quality menu
+  const targetMenu = isIPhone ? iphoneQualityMenu : qualityMenu;
+  if (!targetMenu) return;
   
-  if (qualityMenu) {
-    qualityMenu.innerHTML = qualityOptionsHTML;
-    setupQualityOptionEvents(qualityMenu, player, customPlayer, linksData, isNativeEmbed);
-  }
+  targetMenu.innerHTML = '';
   
-  if (isIPhone && iphoneQualityMenu) {
-    iphoneQualityMenu.innerHTML = qualityOptionsHTML;
-    setupQualityOptionEvents(iphoneQualityMenu, player, customPlayer, linksData, isNativeEmbed);
-  }
+  qualityOptions.forEach(option => {
+    const qualityItem = document.createElement('div');
+    qualityItem.className = 'quality-item py-1 px-3 text-sm text-text-primary hover:bg-zinc-700 cursor-pointer';
+    qualityItem.dataset.url = option.url;
+    qualityItem.dataset.quality = option.name;
+    qualityItem.textContent = option.name;
+    targetMenu.appendChild(qualityItem);
+  });
   
-  // setup quality button click events
-  if (qualityBtn) {
-    qualityBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
+  // Setup event listeners
+  setupQualityOptionEvents(
+    qualityBtn, qualityToggleBtn, targetMenu, player, 
+    customPlayer, isIPhone, isNativeEmbed, fetchVideoUrlCallback, isIframeEmbed
+  );
+}
+
+function setupQualityOptionEvents(
+  qualityBtn, qualityToggleBtn, qualityMenu, player, 
+  customPlayer, isIPhone, isNativeEmbed,
+  fetchVideoUrlCallback, // Use the callback function
+  isIframeEmbed = false // Parameter to indicate if using iframe embeds
+) {
+  // Toggle quality menu
+  const toggleQualityMenu = () => {
+    if (isIPhone) {
       qualityMenu.classList.toggle('hidden');
-    });
+    } else {
+      qualityMenu.classList.toggle('opacity-0');
+      qualityMenu.classList.toggle('pointer-events-none');
+    }
+  };
+  
+  if (qualityBtn) {
+    qualityBtn.addEventListener('click', toggleQualityMenu);
   }
   
   if (qualityToggleBtn) {
-    qualityToggleBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      iphoneQualityMenu.classList.toggle('hidden');
-    });
+    qualityToggleBtn.addEventListener('click', toggleQualityMenu);
   }
   
-  document.addEventListener('click', (e) => {
-    if (qualityBtn && !qualityBtn.contains(e.target) && !qualityMenu.contains(e.target)) {
-      qualityMenu.classList.add('hidden');
-    }
-    
-    if (qualityToggleBtn && !qualityToggleBtn.contains(e.target) && !iphoneQualityMenu.contains(e.target)) {
-      iphoneQualityMenu.classList.add('hidden');
-    }
-  });
-}
-
-function setupQualityOptionEvents(menuElement, player, customPlayer, linksData, isNativeEmbed = false) {
-  const qualityOptions = menuElement.querySelectorAll('.quality-option');
-  qualityOptions.forEach(option => {
-    option.addEventListener('click', async () => {
+  // Handle quality selection
+  const qualityItems = qualityMenu.querySelectorAll('.quality-item');
+  
+  qualityItems.forEach(item => {
+    item.addEventListener('click', async () => {
+      const url = item.dataset.url;
+      const quality = item.dataset.quality;
       const currentTime = player.currentTime;
-      const isPaused = player.paused;
-      const index = option.dataset.index;
       
-      const loadingOverlay = document.createElement('div');
-      loadingOverlay.className = 'absolute inset-0 flex justify-center items-center bg-black bg-opacity-70 z-10';
-      loadingOverlay.innerHTML = renderSpinner('large');
-      customPlayer.appendChild(loadingOverlay);
+      // Show loading state
+      customPlayer.classList.add('loading');
       
       try {
-        let videoUrl;
+        let videoUrl = url;
         
-        if (isNativeEmbed) {
-          // For native embed, use the URL directly
-          videoUrl = linksData[index].url;
-        } else {
-          // For other embeds like AnimePahe, fetch the URL
-          const link = linksData[index];
-          videoUrl = await fetchKwikVideoUrl(link.link);
-        }
+        // Update active quality indicator
+        qualityItems.forEach(qi => qi.classList.remove('active'));
+        item.classList.add('active');
         
-        if (videoUrl) {
-          player.src = videoUrl;
+        // Handle iframe embeds differently
+        if (isIframeEmbed) {
+          // Use the callback to get the iframe URL if available
+          if (fetchVideoUrlCallback) {
+            videoUrl = await fetchVideoUrlCallback({ name: quality, url: url });
+          }
           
-          player.addEventListener('canplay', function onCanPlay() {
-            if (loadingOverlay.parentNode) {
-              loadingOverlay.parentNode.removeChild(loadingOverlay);
+          // Find existing iframe or create a new one
+          let iframe = customPlayer.querySelector('iframe');
+          if (!iframe) {
+            iframe = document.createElement('iframe');
+            iframe.className = 'w-full h-full border-none';
+            iframe.allowFullscreen = true;
+            
+            // Clear the player container and append the iframe
+            const videoElement = customPlayer.querySelector('video');
+            if (videoElement) {
+              videoElement.style.display = 'none';
             }
             
-            player.currentTime = currentTime;
-            
-            if (!isPaused) {
-              player.play();
-            }
-            
-            player.removeEventListener('canplay', onCanPlay);
+            customPlayer.appendChild(iframe);
+          }
+          
+          // Update iframe source
+          iframe.src = videoUrl;
+          
+          // Add load event listener to remove loading state
+          iframe.addEventListener('load', () => {
+            customPlayer.classList.remove('loading');
           }, { once: true });
         } else {
-          throw new Error('Failed to load video URL');
+          // Regular video source handling
+          // If not a native embed and we need to fetch the actual URL
+          if (!isNativeEmbed && url.includes('kwik.cx') && fetchVideoUrlCallback) {
+            videoUrl = await fetchVideoUrlCallback({ name: quality, url: url });
+            if (!videoUrl) {
+              console.error('Failed to fetch video URL');
+              customPlayer.classList.remove('loading');
+              return;
+            }
+          }
+          
+          // Update player source
+          if (Hls.isSupported() && videoUrl.includes('.m3u8')) {
+            if (player.hlsInstance) {
+              player.hlsInstance.destroy();
+            }
+            
+            const hls = new Hls();
+            hls.loadSource(videoUrl);
+            hls.attachMedia(player);
+            player.hlsInstance = hls;
+          } else {
+            player.src = videoUrl;
+          }
+          
+          // Restore playback position and state
+          player.currentTime = currentTime;
+          
+          const wasPlaying = !player.paused;
+          player.addEventListener('loadedmetadata', () => {
+            if (wasPlaying) {
+              player.play().catch(e => console.error('Error playing video:', e));
+            }
+            customPlayer.classList.remove('loading');
+          }, { once: true });
         }
+        
+        // Hide quality menu
+        toggleQualityMenu();
       } catch (error) {
         console.error('Error changing quality:', error);
-        if (loadingOverlay.parentNode) {
-          loadingOverlay.parentNode.removeChild(loadingOverlay);
-        }
-        
-        const errorOverlay = document.createElement('div');
-        errorOverlay.className = 'absolute top-0 left-0 right-0 bg-red-500 text-white p-2 text-center';
-        errorOverlay.textContent = 'Failed to load video. Please try another quality.';
-        customPlayer.appendChild(errorOverlay);
-        
-        setTimeout(() => {
-          if (errorOverlay.parentNode) {
-            errorOverlay.parentNode.removeChild(errorOverlay);
-          }
-        }, 3000);
+        customPlayer.classList.remove('loading');
       }
-      
-      // hide quality menus
-      const qualityMenu = document.querySelector('.quality-menu');
-      const iphoneQualityMenu = document.querySelector('.iphone-quality-menu');
-      if (qualityMenu) qualityMenu.classList.add('hidden');
-      if (iphoneQualityMenu) iphoneQualityMenu.classList.add('hidden');
     });
   });
 }

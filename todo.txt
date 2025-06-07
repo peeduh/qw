@@ -1,3 +1,5 @@
 - save anime home data and details data to localstorage, and update them periodically (or manual refresh)
 - add theming/settings
 - add bookmarks for anime
+- add settings page with: themes, card style, animation speed, spotlight interval, auto-hide sidebar, episode layout
+- fix subtitles on zenime

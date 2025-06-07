@@ -163,7 +163,7 @@ export function initEpisodeList(id, initialSeason, initialEpisode, sources, init
     modalContainer.innerHTML = playerModalHTML;
     document.body.appendChild(modalContainer.firstElementChild);
     
-    initPlayerModal(id, 'tv', sources, initialSourceIndex, currentSeason, currentEpisode, isMobile);
+    initPlayerModal(id, 'tv', sources, initialSourceIndex, currentSeason, currentEpisode, isMobile, mediaTitle);
   }
   
   window.currentPlayingEpisode = null;

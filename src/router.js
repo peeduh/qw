@@ -9,7 +9,6 @@ import { render404Page } from './pages/404.js';
 import { renderDownloadDetailsPage } from './pages/details/download.js';
 import { renderIOSAppPage } from './pages/iosapp.js';
 import { renderAnimePaheEmbed } from './pages/embeds/animepahe.js';
-import { renderAnimePahev2Embed } from './pages/embeds/animepahe_v2.js';
 import { renderNativeEmbed } from './pages/embeds/native.js';
 import { renderAniplayEmbed} from './pages/embeds/aniplay.js';
 import { renderZenimeEmbed } from './pages/embeds/zenime.js';
@@ -118,13 +117,14 @@ function handleRoute() {
     document.title = 'QuickWatch iOS';
     currentPagePromise = Promise.resolve(renderIOSAppPage(appContainer));
   }
-  else if (path.match(/^\/embed\/animepahe\/[\d]+\/[\d]+\/[\d]+$/)) {
+  else if (path.match(/^\/embed\/animepahe\/[A-Za-z0-9\W_]+\/[A-Za-z0-9\W_]+\/[0-9]+\/[0-9]+$/)) {
     document.title = 'AnimePahe Embed';
     const parts = path.split('/');
-    const id = parts[3];
-    const episode = parts[5];
-    const season = parts[4];
-    currentPagePromise = Promise.resolve(renderAnimePaheEmbed(appContainer, { id, episode, season }));
+    const episodeId = parts[3];
+    const name = parts[4];
+    const season = parts[5];
+    const episode = parts[6];
+    currentPagePromise = Promise.resolve(renderAnimePaheEmbed(appContainer, { episodeId, name, season, episode  }));
   }
   else if (path.match(/^\/embed\/native\/[\d]+\/[\d]+\/[\d]+\/\w+$/)) {
     document.title = 'Native Embed';
@@ -141,15 +141,6 @@ function handleRoute() {
     const id = parts[3];
     const type = parts[4];
     currentPagePromise = Promise.resolve(renderNativeEmbed(appContainer, { id, type }));
-  }
-  else if (path.match(/^\/embed\/animepahev2\/[A-Za-z0-9\W_]+\/[A-Za-z0-9\W_]+\/[0-9]+\/[0-9]+$/)) {
-    document.title = 'AnimePahe v2 Embed';
-    const parts = path.split('/');
-    const episodeId = parts[3];
-    const name = parts[4];
-    const season = parts[5];
-    const episode = parts[6];
-    currentPagePromise = Promise.resolve(renderAnimePahev2Embed(appContainer, { episodeId, name, season, episode  }));
   }
   else if (path.match(/^\/embed\/aniplay\/[A-Za-z0-9\W_]+\/[\d]+\/[a-z]+$/)) {
     document.title = 'Aniplay Embed';
