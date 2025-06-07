@@ -155,7 +155,7 @@ async function loadAnimeContent(animeName, episode, season, container, params) {
   }
 }
 
-function renderVideoPlayer(container, videoUrl, initialQuality, qualityOptions, showId, episodeNumber) {
+async function renderVideoPlayer(container, videoUrl, initialQuality, qualityOptions, showId, episodeNumber) {
   const isIPhone = /iPhone/i.test(navigator.userAgent);
   
   // Transform the array to include url property and add callback
@@ -190,7 +190,7 @@ function renderVideoPlayer(container, videoUrl, initialQuality, qualityOptions, 
   });
   
   container.innerHTML = '';
-  const playerInstance = initializePlayer(container, config);
+  const playerInstance = await initializePlayer(container, config);
   
   if (playerInstance) {
     playerInstance.player.src = videoUrl;

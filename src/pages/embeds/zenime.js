@@ -116,7 +116,7 @@ export async function renderZenimeEmbed(container, params) {
       
       window.addEventListener('beforeunload', cleanup);
       
-      renderVideoPlayer(playerContainer, videoSource, 'Auto', qualityOptions, episodeId, episodeId, subtitleTracks);
+      await renderVideoPlayer(playerContainer, videoSource, 'Auto', qualityOptions, episodeId, episodeId, subtitleTracks);
     }
   } catch (error) {
     console.error('Error loading Zenime video:', error);
@@ -187,7 +187,7 @@ function parseM3U8ForQualities(m3u8Content, sourceUrl) {
   return qualityOptions;
 }
 
-function renderVideoPlayer(container, videoSource, initialQuality, qualityOptions, showId, episodeNumber, subtitleTracks = []) {
+async function renderVideoPlayer(container, videoSource, initialQuality, qualityOptions, showId, episodeNumber, subtitleTracks = []) {
   const config = new PlayerConfig({
     showId: showId,
     episodeNumber: episodeNumber,
@@ -208,7 +208,7 @@ function renderVideoPlayer(container, videoSource, initialQuality, qualityOption
   });
   
   container.innerHTML = '';
-  const playerInstance = initializePlayer(container, config);
+  const playerInstance = await initializePlayer(container, config);
   
   if (playerInstance) {
     playerInstance.player.src = videoSource;

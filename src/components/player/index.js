@@ -4,12 +4,10 @@ import { setupTopControls } from './ui/topControls.js';
 import { setupKeybinds } from './keybinds.js';
 import { setupPreviewVideo } from './ui/previewVideo.js';
 import { setupProgressBar, formatTime } from './ui/progressBar.js';
-import { setupQualityOptions } from './ui/qualityOptions.js';
 import { setupVolumeControls } from './ui/volume.js';
 import { setupPlayPause } from './ui/playPause.js';
 import { setupFullscreenPiP } from './ui/fullscreenPiP.js';
 import { setupDownloadVideo } from './downloadVideo.js';
-import { setupSubtitles } from './ui/subtitles.js';
 import { setupSkipButtons } from './ui/skipButtons.js';
 import { PlayerConfig } from './config.js';
 import { generatePlayerHTML } from './template.js';
@@ -41,8 +39,8 @@ export function initializeCustomPlayer(playerContainer, linksData, showId, episo
   return initializePlayer(playerContainer, config);
 }
 
-// New main initialization function
-export function initializePlayer(playerContainer, config) {
+// Main initialization function
+export async function initializePlayer(playerContainer, config) {
   if (!(config instanceof PlayerConfig)) {
     config = new PlayerConfig(config);
   }
@@ -63,7 +61,7 @@ export function initializePlayer(playerContainer, config) {
   const isIPhone = setupIPhoneSupport(elements.player, elements.customPlayer, elements.topControls);
   
   // Initialize all player features based on configuration
-  const handlers = initializePlayerFeatures(elements, config, isIPhone);
+  const handlers = await initializePlayerFeatures(elements, config, isIPhone);
   
   // Setup controls visibility
   setupControlsVisibility(elements, handlers);
@@ -88,12 +86,8 @@ function getPlayerElements(container) {
     currentTimeEl: container.querySelector('.current-time'),
     timeDisplay: container.querySelector('.time-display'),
     fullscreenBtn: container.querySelector('.fullscreen-btn'),
-    qualityToggleBtn: container.querySelector('.quality-toggle-btn'),
-    iphoneQualityMenu: container.querySelector('.iphone-quality-menu'),
-    qualityBtn: container.querySelector('.quality-btn'),
-    qualityMenu: container.querySelector('.quality-menu'),
-    subtitleBtn: container.querySelector('.subtitle-btn'),
-    subtitleMenu: container.querySelector('.subtitle-menu'),
+    settingsBtn: container.querySelector('.settings-btn'),
+    settingsMenu: container.querySelector('.settings-menu'),
     bufferBar: container.querySelector('.buffer-bar'),
     videoPreview: container.querySelector('.video-preview'),
     previewTime: container.querySelector('.preview-time'),
@@ -107,7 +101,7 @@ function getPlayerElements(container) {
   };
 }
 
-function initializePlayerFeatures(elements, config, isIPhone) {
+async function initializePlayerFeatures(elements, config, isIPhone) {
   const handlers = {};
   
   // Core player data (volume, timestamp)
@@ -196,27 +190,25 @@ function initializePlayerFeatures(elements, config, isIPhone) {
     setupSkipButtons(elements.player, elements.backwardBtn, elements.forwardBtn);
   }
   
-  // Quality options
-  if (config.features.qualitySelector && (config.qualityOptions.length > 0 || config.linksData.length > 0)) {
-    setupQualityOptions(
-      elements.qualityMenu, 
-      elements.iphoneQualityMenu, 
-      elements.qualityBtn, 
-      elements.qualityToggleBtn, 
-      elements.player, 
-      elements.customPlayer, 
-      config.qualityOptions.length > 0 ? config.qualityOptions : config.linksData, 
-      isIPhone, 
-      config.isNativeEmbed,
-      config.callbacks.fetchVideoUrl,
-      config.isIframeEmbed
+  // Settings menu
+  if (elements.settingsBtn && elements.settingsMenu) {
+    const { setupSettingsMenu } = await import('./ui/settings.js');
+    handlers.settings = setupSettingsMenu(
+      elements.settingsBtn,
+      elements.settingsMenu,
+      elements.player,
+      elements.customPlayer,
+      {
+        qualityOptions: config.features.qualitySelector && (config.qualityOptions.length > 0 || config.linksData.length > 0) 
+          ? (config.qualityOptions.length > 0 ? config.qualityOptions : config.linksData) 
+          : [],
+        subtitleTracks: config.features.subtitles ? config.subtitleTracks : [],
+        isIPhone,
+        isNativeEmbed: config.isNativeEmbed,
+        fetchVideoUrlCallback: config.callbacks.fetchVideoUrl,
+        isIframeEmbed: config.isIframeEmbed
+      }
     );
-  }
-  
-  // Subtitles
-  if (config.features.subtitles && config.subtitleTracks.length > 0 && elements.subtitleBtn) {
-    handlers.subtitles = setupSubtitles(elements.player, elements.subtitleBtn, elements.subtitleMenu);
-    handlers.subtitles.loadSubtitles(config.subtitleTracks);
   }
   
   // Download functionality
@@ -258,8 +250,8 @@ function setupControlsVisibility(elements, handlers) {
 
 function createPlayerInstance(player, handlers) {
   const cleanup = () => {
-    if (handlers.subtitles?.cleanup) {
-      handlers.subtitles.cleanup();
+    if (handlers.settings?.cleanup) {
+      handlers.settings.cleanup();
     }
     if (handlers.playerData?.cleanupPlayer) {
       handlers.playerData.cleanupPlayer();

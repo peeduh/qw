@@ -132,7 +132,7 @@ button {
   transform: scale(1.2);
 }
 
-.play-pause-btn, .volume-btn, .fullscreen-btn, .pip-btn, .quality-btn, .subtitle-btn, .download-btn, .forwards-10s, .back-10s {
+.play-pause-btn, .volume-btn, .fullscreen-btn, .pip-btn, .settings-btn, .download-btn, .forwards-10s, .back-10s {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -143,25 +143,13 @@ button {
   border-radius: 9999px;
 }
 
-.play-pause-btn:hover, .volume-btn:hover, .fullscreen-btn:hover, .quality-btn:hover, .pip-btn:hover, .subtitle-btn:hover, .download-btn:hover, .forwards-10s:hover, .back-10s:hover {
+.play-pause-btn:hover, .volume-btn:hover, .fullscreen-btn:hover, .settings-btn:hover, .pip-btn:hover, .download-btn:hover, .forwards-10s:hover, .back-10s:hover {
   transform: scale(1.05);
   background-color: var(--color-player-controls-bg);
 }
 
-.play-pause-btn:active, .volume-btn:active, .fullscreen-btn:active, .quality-btn:active, .pip-btn:active, .subtitle-btn:active, .download-btn:active, .forwards-10s:active, .back-10s:active {
+.play-pause-btn:active, .volume-btn:active, .fullscreen-btn:active, .settings-btn:active, .pip-btn:active, .download-btn:active, .forwards-10s:active, .back-10s:active {
   transform: scale(0.9);
-}
-
-.quality-menu {
-  width: 150px;
-  border-radius: 8px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  z-index: 50;
-}
-
-.quality-option {
-  border-radius: 4px;
-  transition: background-color 0.2s ease;
 }
 
 .iframe-loader {

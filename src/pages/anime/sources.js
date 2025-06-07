@@ -26,7 +26,7 @@ export const animeSources = [
     dubUrl: '/embed/animepahe/{urlepisodeId}/{name}/{season}/{episode}'
   },
   {
-    id: 'aniplay',
+    id: 'aniplay', // not working
     name: 'hika',
     subUrl: '/embed/aniplay/{urlepisodeId}/{episode}/sub',
     dubUrl: '/embed/aniplay/{urlepisodeId}/{episode}/dub'

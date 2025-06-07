@@ -88,7 +88,7 @@ async function loadVideoContent(id, episode, season, type, container) {
           
           // Set initial video source
           playerContainer.innerHTML = '';
-          const playerInstance = initializePlayer(playerContainer, config);
+          const playerInstance = await initializePlayer(playerContainer, config);
           
           if (playerInstance) {
             playerInstance.player.src = videoUrl;
