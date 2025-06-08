@@ -188,10 +188,13 @@ function parseM3U8ForQualities(m3u8Content, sourceUrl) {
 }
 
 async function renderVideoPlayer(container, videoSource, initialQuality, qualityOptions, showId, episodeNumber, subtitleTracks = []) {
+  // Clean the showId by removing URL parameters for anime content
+  const cleanShowId = showId.split('?')[0];
+  
   const config = new PlayerConfig({
-    showId: showId,
+    showId: cleanShowId,
     episodeNumber: episodeNumber,
-    mediaType: 'tv',
+    mediaType: 'anime',
     isNativeEmbed: false,
     autoplay: true,
     qualityOptions: qualityOptions,
@@ -210,14 +213,82 @@ async function renderVideoPlayer(container, videoSource, initialQuality, quality
   container.innerHTML = '';
   const playerInstance = await initializePlayer(container, config);
   
-  if (playerInstance) {
-    playerInstance.player.src = videoSource;
+  if (playerInstance && playerInstance.player) {
+    const player = playerInstance.player;
+    
+    // Setup HLS.js for m3u8 streams
+    if (videoSource.includes('.m3u8')) {
+      if (Hls.isSupported()) {
+        const hls = new Hls({
+          enableWorker: true,
+          lowLatencyMode: false,
+          backBufferLength: 90
+        });
+        
+        hls.loadSource(videoSource);
+        hls.attachMedia(player);
+        
+        // Store HLS instance for cleanup
+        player.hlsInstance = hls;
+        
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          if (config.autoplay) {
+            player.play().catch(e => console.log('Autoplay prevented:', e));
+          }
+        });
+        
+        hls.on(Hls.Events.ERROR, (event, data) => {
+          console.error('HLS Error:', data);
+          if (data.fatal) {
+            switch (data.type) {
+              case Hls.ErrorTypes.NETWORK_ERROR:
+                console.log('Fatal network error encountered, trying to recover');
+                hls.startLoad();
+                break;
+              case Hls.ErrorTypes.MEDIA_ERROR:
+                console.log('Fatal media error encountered, trying to recover');
+                hls.recoverMediaError();
+                break;
+              default:
+                console.log('Fatal error, cannot recover');
+                hls.destroy();
+                break;
+            }
+          }
+        });
+      } else if (player.canPlayType('application/vnd.apple.mpegurl')) {
+        // Native HLS support (Safari)
+        player.src = videoSource;
+        if (config.autoplay) {
+          player.play().catch(e => console.log('Autoplay prevented:', e));
+        }
+      } else {
+        console.error('HLS is not supported in this browser');
+      }
+    } else {
+      // Regular video file
+      player.src = videoSource;
+      if (config.autoplay) {
+        player.play().catch(e => console.log('Autoplay prevented:', e));
+      }
+    }
   }
   
-  // Clean up function to remove event listeners when the page is unloaded
-  window.addEventListener('beforeunload', () => {
-    if (playerInstance && typeof playerInstance.cleanup === 'function') {
-      playerInstance.cleanup();
+  // Enhanced cleanup function
+  const cleanup = () => {
+    if (playerInstance) {
+      const player = playerInstance.player;
+      if (player && player.hlsInstance) {
+        player.hlsInstance.destroy();
+        delete player.hlsInstance;
+      }
+      if (typeof playerInstance.cleanup === 'function') {
+        playerInstance.cleanup();
+      }
     }
-  });
+  };
+  
+  window.addEventListener('beforeunload', cleanup);
+  
+  return { playerInstance, cleanup };
 }
