@@ -12,7 +12,7 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-RUN pip install flask requests flask-cors
+RUN pip install flask requests flask-cors urllib3
 
 COPY . /app/
 
