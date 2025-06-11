@@ -3,7 +3,7 @@ import { initializePlayer } from '../../components/player/index.js';
 import { PlayerConfig } from '../../components/player/config.js';
 import { createProxyUrl, shouldUseProxy, createProxyHeaders } from '../../components/player/proxy.js';
 import { renderFullPageSpinner, renderSpinner } from '../../components/misc/loading.js';
-import Hls from 'hls.js';
+import config from '../../config.json';
 
 export async function renderZenimeEmbed(container, params) {
   let { episodeId, server, type } = params;
@@ -26,7 +26,7 @@ export async function renderZenimeEmbed(container, params) {
   try {
     const zenimeStep = window.splashScreen?.addStep('Loading video data...');
     
-    const zenimeResponse = await fetch('https://varunaditya.xyz/api/proxy', {
+    const zenimeResponse = await fetch(config.proxy, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -87,20 +87,6 @@ export async function renderZenimeEmbed(container, params) {
       
       let qualityOptions = [{url: videoSource, name: 'Auto'}];
       
-      if (videoSource.includes('.m3u8')) {
-        try {
-          const m3u8Response = await fetch(videoSource);
-          const m3u8Content = await m3u8Response.text();
-          
-          const extractedOptions = parseM3U8ForQualities(m3u8Content, videoSource);
-          if (extractedOptions.length > 0) {
-            qualityOptions = extractedOptions;
-          }
-        } catch (error) {
-          console.error('Error parsing m3u8 for qualities:', error);
-        }
-      }
-      
       window.splashScreen?.completeStep(m3u8Step);
       if (window.splashScreen) {
         window.splashScreen.hide();
@@ -128,65 +114,6 @@ export async function renderZenimeEmbed(container, params) {
   }
 }
 
-function parseM3U8ForQualities(m3u8Content, sourceUrl) {
-  const qualityOptions = [];
-  const lines = m3u8Content.split('\n');
-  const baseUrl = sourceUrl.substring(0, sourceUrl.lastIndexOf('/') + 1);
-  
-  for (let i = 0; i < lines.length; i++) {
-    if (lines[i].startsWith('#EXT-X-STREAM-INF:')) {
-      const streamInfo = lines[i];
-      const nextLine = lines[i + 1];
-      
-      if (nextLine && !nextLine.startsWith('#')) {
-        const resolutionMatch = streamInfo.match(/RESOLUTION=(\d+x\d+)/);
-        const bandwidthMatch = streamInfo.match(/BANDWIDTH=(\d+)/);
-        
-        let qualityName = 'Unknown';
-        if (resolutionMatch && resolutionMatch[1]) {
-          const resolution = resolutionMatch[1];
-          const height = resolution.split('x')[1];
-          qualityName = `${height}p`;
-          
-          if (bandwidthMatch && bandwidthMatch[1]) {
-            const bandwidth = parseInt(bandwidthMatch[1]);
-            const mbps = (bandwidth / 1000000).toFixed(1);
-            qualityName += ` (${mbps} Mbps)`;
-          }
-        }
-        
-        let qualityUrl = nextLine;
-        if (!qualityUrl.startsWith('http')) {
-          qualityUrl = new URL(qualityUrl, baseUrl).href;
-        }
-        
-        if (sourceUrl.includes('proxy.varunaditya.xyz') && !qualityUrl.includes('proxy.varunaditya.xyz')) {
-          const urlParams = new URLSearchParams(new URL(sourceUrl).search);
-          const originalUrl = urlParams.get('url');
-          const headers = urlParams.get('headers');
-          
-          const proxyBase = sourceUrl.substring(0, sourceUrl.indexOf('/m3u8-proxy'));
-          qualityUrl = `${proxyBase}/m3u8-proxy?url=${encodeURIComponent(qualityUrl)}&headers=${headers}`;
-        }
-        
-        qualityOptions.push({
-          url: qualityUrl,
-          name: qualityName
-        });
-      }
-    }
-  }
-  
-  if (qualityOptions.length > 0) {
-    qualityOptions.unshift({
-      url: sourceUrl,
-      name: 'Auto'
-    });
-  }
-  
-  return qualityOptions;
-}
-
 async function renderVideoPlayer(container, videoSource, initialQuality, qualityOptions, showId, episodeNumber, subtitleTracks = []) {
   // Clean the showId by removing URL parameters for anime content
   const cleanShowId = showId.split('?')[0];
@@ -206,73 +133,14 @@ async function renderVideoPlayer(container, videoSource, initialQuality, quality
       preview: true,
       skipButtons: true,
       aspectToggle: true,
-      pip: true
+      pip: true,
+      isM3U8: videoSource.includes('.m3u8')
     }
   });
   
   container.innerHTML = '';
   const playerInstance = await initializePlayer(container, config);
   
-  if (playerInstance && playerInstance.player) {
-    const player = playerInstance.player;
-    
-    // Setup HLS.js for m3u8 streams
-    if (videoSource.includes('.m3u8')) {
-      if (Hls.isSupported()) {
-        const hls = new Hls({
-          enableWorker: true,
-          lowLatencyMode: false,
-          backBufferLength: 90
-        });
-        
-        hls.loadSource(videoSource);
-        hls.attachMedia(player);
-        
-        // Store HLS instance for cleanup
-        player.hlsInstance = hls;
-        
-        hls.on(Hls.Events.MANIFEST_PARSED, () => {
-          if (config.autoplay) {
-            player.play().catch(e => console.log('Autoplay prevented:', e));
-          }
-        });
-        
-        hls.on(Hls.Events.ERROR, (event, data) => {
-          console.error('HLS Error:', data);
-          if (data.fatal) {
-            switch (data.type) {
-              case Hls.ErrorTypes.NETWORK_ERROR:
-                console.log('Fatal network error encountered, trying to recover');
-                hls.startLoad();
-                break;
-              case Hls.ErrorTypes.MEDIA_ERROR:
-                console.log('Fatal media error encountered, trying to recover');
-                hls.recoverMediaError();
-                break;
-              default:
-                console.log('Fatal error, cannot recover');
-                hls.destroy();
-                break;
-            }
-          }
-        });
-      } else if (player.canPlayType('application/vnd.apple.mpegurl')) {
-        // Native HLS support (Safari)
-        player.src = videoSource;
-        if (config.autoplay) {
-          player.play().catch(e => console.log('Autoplay prevented:', e));
-        }
-      } else {
-        console.error('HLS is not supported in this browser');
-      }
-    } else {
-      // Regular video file
-      player.src = videoSource;
-      if (config.autoplay) {
-        player.play().catch(e => console.log('Autoplay prevented:', e));
-      }
-    }
-  }
   
   // Enhanced cleanup function
   const cleanup = () => {

@@ -1,3 +1,4 @@
+import { switchHLSQuality } from '../m3u8Utils.js';
 import Hls from 'hls.js';
 import config from '../../../config.json';
 
@@ -415,7 +416,12 @@ export function setupSettingsMenu(settingsBtn, settingsMenu, player, customPlaye
             }
             
             // Update player source
-            if (Hls.isSupported() && videoUrl.includes('.m3u8')) {
+            if (player.hlsInstance && Hls.isSupported()) {
+              const switched = switchHLSQuality(player, quality, videoUrl);
+              if (!switched) {
+                player.src = videoUrl;
+              }
+            } else if (Hls.isSupported() && videoUrl.includes('.m3u8')) {
               if (player.hlsInstance) {
                 player.hlsInstance.destroy();
               }

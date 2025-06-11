@@ -13,7 +13,8 @@ export class PlayerConfig {
       preview: options.features?.preview ?? true,
       skipButtons: options.features?.skipButtons ?? true,
       aspectToggle: options.features?.aspectToggle ?? true,
-      pip: options.features?.pip ?? true
+      pip: options.features?.pip ?? true,
+      isM3U8: options.features?.isM3U8 ?? false
     };
     
     // Data

@@ -4,3 +4,4 @@ package-lock.json
 /dist
 /testing/*.json
 /testing/*/*.json
+*__pycache__

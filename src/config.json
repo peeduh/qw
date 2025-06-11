@@ -1,4 +1,5 @@
 {
-    "proxy": "https://varunaditya.xyz/api/proxy",
-    "m3u8proxy": "https://proxy.varunaditya.xyz"
+    "proxy": "https://a.quickwatch.co/api/proxy",
+    "m3u8proxy": "https://p.quickwatch.co",
+    "api": "https://a.quickwatch.co/api"
 }

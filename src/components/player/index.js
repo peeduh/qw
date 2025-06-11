@@ -11,6 +11,7 @@ import { setupDownloadVideo } from './downloadVideo.js';
 import { setupSkipButtons } from './ui/skipButtons.js';
 import { PlayerConfig } from './config.js';
 import { generatePlayerHTML } from './template.js';
+import { setupM3U8Player, cleanupHLS } from './m3u8Utils.js';
 
 // Main initialization function
 export async function initializePlayer(playerContainer, config) {
@@ -38,6 +39,17 @@ export async function initializePlayer(playerContainer, config) {
   
   // Setup controls visibility
   setupControlsVisibility(elements, handlers);
+  
+  // handle M3U8 streams if enabled
+  if (config.features.isM3U8) {
+    await setupM3U8Player(elements.player, config.videoSource, config);
+  } else {
+    // Regular video source setup
+    elements.player.src = config.videoSource;
+    if (config.autoplay) {
+      elements.player.play().catch(e => console.log('Autoplay prevented:', e));
+    }
+  }
   
   // Return player instance with cleanup function
   return createPlayerInstance(elements.player, handlers);
@@ -75,7 +87,7 @@ function getPlayerElements(container) {
 }
 
 async function initializePlayerFeatures(elements, config, isIPhone) {
-  const handlers = {};
+  const handlers = {config: config};
   
   // Core player data (volume, timestamp)
   if (config.showId) {
@@ -223,19 +235,26 @@ function setupControlsVisibility(elements, handlers) {
 
 function createPlayerInstance(player, handlers) {
   const cleanup = () => {
-    if (handlers.settings?.cleanup) {
-      handlers.settings.cleanup();
+    // Clean up HLS instance if it exists
+    cleanupHLS(player);
+    
+    // Clean up settings menu
+    if (handlers.cleanupSettings) {
+      handlers.cleanupSettings();
     }
-    if (handlers.playerData?.cleanupPlayer) {
-      handlers.playerData.cleanupPlayer();
+    
+    // Clean up data handlers
+    if (handlers.cleanupDataHandlers) {
+      handlers.cleanupDataHandlers();
     }
   };
-  
+
   player.cleanup = cleanup;
-  
+
   return {
     player,
     cleanup,
-    handlers
+    handlers,
+    setupVideoSource: (videoSource) => setupM3U8Player(player, videoSource, handlers.config)
   };
 }
