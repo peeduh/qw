@@ -13,7 +13,7 @@ session = requests.Session()
 retry_strategy = Retry(
     total=3,
     status_forcelist=[429, 500, 502, 503, 504],
-    method_whitelist=["HEAD", "GET", "OPTIONS", "POST"],
+    allowed_methods=["HEAD", "GET", "OPTIONS", "POST"],
     backoff_factor=1
 )
 adapter = HTTPAdapter(max_retries=retry_strategy, pool_connections=10, pool_maxsize=20)
