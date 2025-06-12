@@ -1,33 +1,35 @@
 import Hls from 'hls.js';
+import { createProxyUrl, createTsProxyUrl, createProxyHeaders, isProxiedUrl } from './proxy.js';
 
 export async function setupM3U8Player(player, videoSource, config) {
   try {
-    // Parse M3U8 for quality options if quality selector is enabled
-    if (config.features.qualitySelector) {
-      try {
-        const m3u8Response = await fetch(videoSource);
-        if (!m3u8Response.ok) {
-          throw new Error(`HTTP error! status: ${m3u8Response.status}`);
-        }
-        const m3u8Content = await m3u8Response.text();
-        
-        if (m3u8Content && m3u8Content.trim()) {
-          const extractedOptions = parseM3U8ForQualities(m3u8Content, videoSource);
-          if (extractedOptions.length > 0) {
-            config.qualityOptions = extractedOptions;
-          }
-        }
-      } catch (error) {
-        console.error('Error parsing m3u8 for qualities:', error);
-      }
-    }
-
     // Setup HLS player
     if (Hls.isSupported()) {
       const hls = new Hls({
         enableWorker: true,
         lowLatencyMode: false,
-        backBufferLength: 90
+        backBufferLength: 90,
+        // Add loader configuration for proxy support
+        loader: class extends Hls.DefaultConfig.loader {
+          load(context, config, callbacks) {
+            // If URL is already proxied, use it as-is
+            if (isProxiedUrl(context.url)) {
+              return super.load(context, config, callbacks);
+            }
+            
+            // For non-proxied URLs, check if we need to proxy them
+            if (context.url.includes('.m3u8') || context.url.includes('.ts')) {
+              const headers = createProxyHeaders(context.url);
+              const proxyUrl = context.url.includes('.ts') 
+                ? createTsProxyUrl(context.url, headers)
+                : createProxyUrl(context.url, headers);
+              
+              context.url = proxyUrl;
+            }
+            
+            return super.load(context, config, callbacks);
+          }
+        }
       });
       
       hls.loadSource(videoSource);
@@ -37,6 +39,12 @@ export async function setupM3U8Player(player, videoSource, config) {
       player.hlsInstance = hls;
       
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        // Extract quality options from hls.js levels after manifest is parsed
+        if (config.features.qualitySelector && hls.levels && hls.levels.length > 0) {
+          const qualityOptions = extractQualitiesFromHLS(hls.levels, videoSource);
+          config.qualityOptions = qualityOptions;
+        }
+        
         if (config.autoplay) {
           player.play().catch(e => console.log('Autoplay prevented:', e));
         }
@@ -75,69 +83,38 @@ export async function setupM3U8Player(player, videoSource, config) {
   }
 }
 
-export function parseM3U8ForQualities(m3u8Content, sourceUrl) {
-  // Add validation for parameters
-  if (!m3u8Content || !sourceUrl) {
-    console.warn('Invalid parameters for parseM3U8ForQualities:', { m3u8Content: !!m3u8Content, sourceUrl: !!sourceUrl });
-    return [];
-  }
-
+// Extract quality options from hls.js levels
+function extractQualitiesFromHLS(levels, sourceUrl) {
   const qualityOptions = [];
-  const lines = m3u8Content.split('\n');
-  const baseUrl = sourceUrl.substring(0, sourceUrl.lastIndexOf('/') + 1);
   
-  for (let i = 0; i < lines.length; i++) {
-    if (lines[i].startsWith('#EXT-X-STREAM-INF:')) {
-      const streamInfo = lines[i];
-      const nextLine = lines[i + 1];
+  // Add Auto option first
+  qualityOptions.push({
+    url: sourceUrl,
+    name: 'Auto'
+  });
+  
+  // Process each level from hls.js
+  levels.forEach((level, index) => {
+    let qualityName = 'Unknown';
+    
+    if (level.height) {
+      qualityName = `${level.height}p`;
       
-      if (nextLine && !nextLine.startsWith('#')) {
-        const resolutionMatch = streamInfo.match(/RESOLUTION=(\d+x\d+)/);
-        const bandwidthMatch = streamInfo.match(/BANDWIDTH=(\d+)/);
-        
-        let qualityName = 'Unknown';
-        if (resolutionMatch && resolutionMatch[1]) {
-          const resolution = resolutionMatch[1];
-          const height = resolution.split('x')[1];
-          qualityName = `${height}p`;
-          
-          if (bandwidthMatch && bandwidthMatch[1]) {
-            const bandwidth = parseInt(bandwidthMatch[1]);
-            const mbps = (bandwidth / 1000000).toFixed(1);
-            qualityName += ` (${mbps} Mbps)`;
-          }
-        }
-        
-        let qualityUrl = nextLine.trim();
-        if (!qualityUrl.startsWith('http')) {
-          qualityUrl = new URL(qualityUrl, baseUrl).href;
-        }
-        
-        // Handle proxy URLs
-        if (sourceUrl.includes('proxy.varunaditya.xyz') && !qualityUrl.includes('proxy.varunaditya.xyz')) {
-          const urlParams = new URLSearchParams(new URL(sourceUrl).search);
-          const originalUrl = urlParams.get('url');
-          const headers = urlParams.get('headers');
-          
-          const proxyBase = sourceUrl.substring(0, sourceUrl.indexOf('/m3u8-proxy'));
-          qualityUrl = `${proxyBase}/m3u8-proxy?url=${encodeURIComponent(qualityUrl)}&headers=${headers}`;
-        }
-        
-        qualityOptions.push({
-          url: qualityUrl,
-          name: qualityName
-        });
+      if (level.bitrate) {
+        const mbps = (level.bitrate / 1000000).toFixed(1);
+        qualityName += ` (${mbps} Mbps)`;
       }
+    } else if (level.bitrate) {
+      const mbps = (level.bitrate / 1000000).toFixed(1);
+      qualityName = `${mbps} Mbps`;
     }
-  }
-  
-  // Add Auto option at the beginning if we found quality options
-  if (qualityOptions.length > 0) {
-    qualityOptions.unshift({
-      url: sourceUrl,
-      name: 'Auto'
+    
+    qualityOptions.push({
+      url: level.url || sourceUrl,
+      name: qualityName,
+      level: index // Store the hls.js level index for switching
     });
-  }
+  });
   
   return qualityOptions;
 }
@@ -154,18 +131,31 @@ export function switchHLSQuality(player, quality, videoUrl) {
     } else {
       // Find the level that matches the quality
       const levels = player.hlsInstance.levels;
-      const targetLevel = levels.findIndex(level => {
+      let targetLevel = -1;
+      
+      // First try to match by height
+      targetLevel = levels.findIndex(level => {
         const height = level.height;
-        return quality.includes(`${height}p`);
+        return height && quality.includes(`${height}p`);
       });
+      
+      // If no height match, try to match by bitrate
+      if (targetLevel === -1) {
+        targetLevel = levels.findIndex(level => {
+          if (level.bitrate) {
+            const mbps = (level.bitrate / 1000000).toFixed(1);
+            return quality.includes(`${mbps} Mbps`);
+          }
+          return false;
+        });
+      }
       
       if (targetLevel !== -1) {
         player.hlsInstance.currentLevel = targetLevel;
         return true;
       } else {
-        // Fallback: reload with new source
-        player.hlsInstance.loadSource(videoUrl);
-        return true;
+        console.warn('Could not find matching quality level:', quality);
+        return false;
       }
     }
   } catch (error) {
@@ -183,4 +173,10 @@ export function cleanupHLS(player) {
       console.error('Error cleaning up HLS instance:', error);
     }
   }
+}
+
+// Legacy function kept for backward compatibility but no longer used
+export function parseM3U8ForQualities(m3u8Content, sourceUrl) {
+  console.warn('parseM3U8ForQualities is deprecated. Quality parsing is now handled by hls.js');
+  return [];
 }

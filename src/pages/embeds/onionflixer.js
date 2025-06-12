@@ -98,7 +98,7 @@ export async function renderOnionEmbed(container, params) {
       
       window.addEventListener('beforeunload', cleanup);
       
-      await renderVideoPlayer(playerContainer, videoSource, qualityOptions, type, episode);
+      await renderVideoPlayer(playerContainer, videoSource, qualityOptions, type, id, episode);
     }
   } catch (error) {
     console.error('Error loading Onion video:', error);

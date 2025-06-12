@@ -16,10 +16,21 @@ export function createProxyUrl(url, headers = {}) {
   return `${proxyUrl}/m3u8-proxy?url=${encodedUrl}&headers=${encodedHeaders}`;
 }
 
+export function createTsProxyUrl(url, headers = {}) {
+  if (!url) return '';
+  
+  const proxyUrl = config.m3u8proxy;
+  
+  const encodedUrl = encodeURIComponent(url);
+  const encodedHeaders = encodeURIComponent(JSON.stringify(headers));
+  
+  return `${proxyUrl}/ts-proxy?url=${encodedUrl}&headers=${encodedHeaders}`;
+}
+
 export function shouldUseProxy(url) {
   if (!url) return false;
   
-  return url.includes('.m3u8') || url.toLowerCase().includes('stream');
+  return url.includes('.m3u8') || url.toLowerCase().includes('stream') || url.includes('.ts');
 }
 
 export function createProxyHeaders(url) {
@@ -37,4 +48,9 @@ export function createProxyHeaders(url) {
     console.error('Error creating proxy headers:', error);
     return {};
   }
+}
+
+export function isProxiedUrl(url) {
+  if (!url) return false;
+  return url.includes(config.m3u8proxy);
 }
