@@ -6,11 +6,16 @@ export async function setupM3U8Player(player, videoSource, config) {
     if (config.features.qualitySelector) {
       try {
         const m3u8Response = await fetch(videoSource);
+        if (!m3u8Response.ok) {
+          throw new Error(`HTTP error! status: ${m3u8Response.status}`);
+        }
         const m3u8Content = await m3u8Response.text();
         
-        const extractedOptions = parseM3U8ForQualities(m3u8Content, videoSource);
-        if (extractedOptions.length > 0) {
-          config.qualityOptions = extractedOptions;
+        if (m3u8Content && m3u8Content.trim()) {
+          const extractedOptions = parseM3U8ForQualities(m3u8Content, videoSource);
+          if (extractedOptions.length > 0) {
+            config.qualityOptions = extractedOptions;
+          }
         }
       } catch (error) {
         console.error('Error parsing m3u8 for qualities:', error);
@@ -71,6 +76,12 @@ export async function setupM3U8Player(player, videoSource, config) {
 }
 
 export function parseM3U8ForQualities(m3u8Content, sourceUrl) {
+  // Add validation for parameters
+  if (!m3u8Content || !sourceUrl) {
+    console.warn('Invalid parameters for parseM3U8ForQualities:', { m3u8Content: !!m3u8Content, sourceUrl: !!sourceUrl });
+    return [];
+  }
+
   const qualityOptions = [];
   const lines = m3u8Content.split('\n');
   const baseUrl = sourceUrl.substring(0, sourceUrl.lastIndexOf('/') + 1);
@@ -97,7 +108,7 @@ export function parseM3U8ForQualities(m3u8Content, sourceUrl) {
           }
         }
         
-        let qualityUrl = nextLine;
+        let qualityUrl = nextLine.trim();
         if (!qualityUrl.startsWith('http')) {
           qualityUrl = new URL(qualityUrl, baseUrl).href;
         }

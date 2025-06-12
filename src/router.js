@@ -8,10 +8,13 @@ import { renderDetailsMobilepage } from './pages/details/watch_mobile.js';
 import { render404Page } from './pages/404.js';
 import { renderDownloadDetailsPage } from './pages/details/download.js';
 import { renderIOSAppPage } from './pages/iosapp.js';
+
 import { renderAnimePaheEmbed } from './pages/embeds/animepahe.js';
 import { renderNativeEmbed } from './pages/embeds/native.js';
 import { renderAniplayEmbed} from './pages/embeds/aniplay.js';
 import { renderZenimeEmbed } from './pages/embeds/zenime.js';
+import { renderOnionEmbed } from './pages/embeds/onionflixer.js'
+
 import { renderMoviesPage } from './pages/browse/movies.js';
 import { renderTvPage } from './pages/browse/tv.js';
 import { renderGenresPage } from './pages/genres/genres.js';
@@ -135,13 +138,6 @@ function handleRoute() {
     const type = parts[6];
     currentPagePromise = Promise.resolve(renderNativeEmbed(appContainer, { id, episode, season, type }));
   }
-  else if (path.match(/^\/embed\/native\/[\d]+\/\w+$/)) {
-    document.title = 'Native Embed';
-    const parts = path.split('/');
-    const id = parts[3];
-    const type = parts[4];
-    currentPagePromise = Promise.resolve(renderNativeEmbed(appContainer, { id, type }));
-  }
   else if (path.match(/^\/embed\/aniplay\/[A-Za-z0-9\W_]+\/[\d]+\/[a-z]+$/)) {
     document.title = 'Aniplay Embed';
     const parts = path.split('/');
@@ -157,6 +153,15 @@ function handleRoute() {
     const server = parts[4];
     const type = parts[5];
     currentPagePromise = Promise.resolve(renderZenimeEmbed(appContainer, { episodeId, server, type }));
+  }
+  else if (path.match(/^\/embed\/onion\/[\d]+\/[\d]+\/[\d]+\/\w+$/)) {
+    document.title = 'Native Embed';
+    const parts = path.split('/');
+    const id = parts[3];
+    const season = parts[4];
+    const episode = parts[5];
+    const type = parts[6];
+    currentPagePromise = Promise.resolve(renderOnionEmbed(appContainer, { id, episode, season, type }));
   }
   else if (path === '/movies') {
     document.title = 'Movies';

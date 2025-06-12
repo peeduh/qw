@@ -1,7 +1,7 @@
 export const sources = [
     {
       name: 'Native',
-      movieUrl: `/embed/native/{id}/movie`,
+      movieUrl: `/embed/native/{id}/0/0/movie`,
       tvUrl: `/embed/native/{id}/{season}/{episode}/tv`
     },
     {

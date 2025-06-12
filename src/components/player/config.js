@@ -4,6 +4,7 @@ export class PlayerConfig {
     this.autoplay = options.autoplay ?? false;
     this.crossOrigin = options.crossOrigin ?? 'anonymous';
     this.objectFit = options.objectFit ?? 'contain';
+    this.videoSource = options.videoSource || null;
     
     // Feature toggles
     this.features = {
