@@ -1,3 +1,0 @@
-- save anime home data and details data to localstorage, and update them periodically (or manual refresh)
-- add bookmarks for anime
-- implement onionflixer/vidfast ASAP
