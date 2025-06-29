@@ -7,6 +7,7 @@ import Tv from './pages/browse/Tv.jsx';
 import Details from './pages/details/Details.jsx';
 import Watchlist from './pages/Watchlist.jsx';
 import Search from './pages/Search.jsx';
+import Ios from './pages/misc/Ios.jsx';
 
 export default function App() {
   return (
@@ -20,6 +21,7 @@ export default function App() {
         <Route path="/tv/:tmdbId" element={<Details />} />
         <Route path="/watchlist" element={<Watchlist />} />
         <Route path="/search" element={<Search />} />
+        <Route path="/ios" element={<Ios />} />
       </Routes>
       <Toaster 
         position="bottom-center"

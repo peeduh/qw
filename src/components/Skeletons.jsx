@@ -74,9 +74,9 @@ export const CategorySkeleton = ({ title }) => {
 
 export const SearchSkeleton = () => {
   return (
-    <div className="animate-fade-in">
+    <div className="animate-fade-in mb-8">
       <h2 className="text-2xl text-white mb-5">Search Results</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 py-4">
         {[...Array(12)].map((_, index) => (
           <MediaCardSkeleton key={index} />
         ))}

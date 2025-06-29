@@ -37,21 +37,21 @@ const SpotlightSection = ({ item, mediaType, isLoading, onWatchClick, onDownload
   return (
     <div id="spotlight" className="relative w-full h-[70vh] bg-cover bg-center bg-no-repeat flex items-end animate-slide-up" style={{backgroundImage: `url('${backgroundImage}')`}}>
       <div className="absolute inset-0 bg-gradient-to-r from-[#090a0a]/70 via-black/20 to-transparent"></div>
-      <div className="absolute inset-0 bg-gradient-to-t from-[#090a0a]/80 via-black/20 to-transparent"></div>
-      <div className="absolute inset-0 bg-gradient-to-b from-[#090a0a]/60 via-[#090a0a]/10 to-transparent"></div>
+      <div className="absolute inset-0 bg-gradient-to-t from-[#090a0a]/80 via-black/40 md:via-black/20 to-transparent"></div>
+      <div className="absolute inset-0 bg-gradient-to-b from-[#090a0a]/80 md:from-[#090a0a]/60 via-[#090a0a]/10 to-transparent"></div>
 
       {/* Content container */}
-      <div className="relative z-10 p-8 pb-0 w-full pr-0">
+      <div className="relative z-10 p-4 md:p-8 pb-0 w-full md:pr-0 md:text-left text-center">
         {logoImage ? (
-          <img src={getTmdbImage(logoImage)} className="max-h-72 max-w-sm min-w-[13rem] mb-4 animate-fade-in-delayed" alt={item.title || item.name} />
+          <img src={getTmdbImage(logoImage)} className="w-[80%] md:max-h-72 max-w-sm min-w-[13rem] mb-4 animate-fade-in-delayed mx-auto md:mx-0" alt={item.title || item.name} />
         ) : (
-          <h1 className="text-5xl md:text-6xl font-bold text-white mb-4 w-[24rem] animate-fade-in-delayed">
+          <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold text-white mb-4 w-full md:w-[24rem] animate-fade-in-delayed">
             {item.title || item.name}
           </h1>
         )}
         
         {/* Rating and info */}
-        <div className="flex items-center gap-2 mb-4 animate-fade-in-delayed-2">
+        <div className="flex items-center gap-2 mb-4 animate-fade-in-delayed-2 justify-center md:justify-start">
           <div className="bg-gradient-to-r from-[#90cea1] to-[#01b4e4] text-black px-1 py-[1px] rounded font-black tracking-tighter text-sm">TMDB</div>
           <span className="text-neutral-300">{item.vote_average?.toFixed(1) || '8.0'}</span>
           <span className="text-neutral-300">•</span>
@@ -66,13 +66,13 @@ const SpotlightSection = ({ item, mediaType, isLoading, onWatchClick, onDownload
         </div>
         
         {/* Description */}
-        <p className="text-white text-lg mb-16 leading-6 max-w-xl line-clamp-3 overflow-ellipsis animate-fade-in-delayed-3">
+        <p className="text-white text-base md:text-lg mb-8 md:mb-16 leading-6 max-w-xl line-clamp-3 overflow-ellipsis animate-fade-in-delayed-3 mx-auto md:mx-0">
           {item.overview}
         </p>
         
         {/* Action buttons */}
-        <div className="flex flex-row mb-4 w-full justify-between animate-fade-in-delayed-4">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col md:flex-row mb-4 w-full md:justify-between items-center gap-4 animate-fade-in-delayed-4">
+          <div className="flex items-center gap-2 justify-center">
             <button 
               onClick={onDownloadClick}
               className="bg-white/15 text-white p-2.5 rounded-full hover:bg-white/25 transition-all cursor-pointer"
@@ -99,13 +99,13 @@ const SpotlightSection = ({ item, mediaType, isLoading, onWatchClick, onDownload
               <Plus className="w-6 h-6" />
             </button>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="hidden md:flex items-center gap-2">
             <span className="bg-white/15 text-white p-2 pl-3 pr-12 font-light">{getContentRating(item)}</span>
           </div>
         </div>
         
         {/* Genre tags */}
-        <div className="flex gap-2 text-neutral-600 text-sm mb-3 animate-fade-in-delayed-5">
+        <div className="flex gap-2 text-neutral-600 text-sm mb-3 animate-fade-in-delayed-5 justify-center md:justify-start">
           {
             item.genres?.slice(0, 3).map((genre, index) => (
               <React.Fragment key={genre.id}>
@@ -148,12 +148,12 @@ const CategorySection = ({ title, items, isLoading: categoryLoading, renderItem,
 
   return (
     <div className="mb-8 animate-slide-up">
-      <div className="flex justify-between items-center mb-1">
+      <div className="flex justify-between items-center mb-1 items-end">
         <h2 className="text-2xl text-white">{title}</h2>
         {headerComponent}
       </div>
       {layout === 'grid' ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 py-4">
           {displayedItems.map((item, index) => (
             <div key={item.uniqueId || item.id || index} className="animate-stagger" style={{animationDelay: `${index * 100}ms`}}>
               {renderItem(item, index)}
@@ -332,7 +332,7 @@ const Details = () => {
           }}
         />
       
-      <div className="px-8 py-8 space-y-8">
+      <div className="px-8 pb-8 pt-6 space-y-8">
         {showDownloads ? (
           <DownloadSection 
             item={detailsItem}
