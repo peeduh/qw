@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Tv, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, Tv, ChevronDown, ChevronLeft, ChevronRight, Shield } from 'lucide-react';
 import { getSource } from './Sources.jsx';
 import { initializeSourceTracking } from '../../components/progress/index.jsx';
 import { fetchTmdb } from '../../utils.jsx';
@@ -22,6 +22,7 @@ const Watch = ({ isOpen, onClose, onUpdateUrl, mediaType, tmdbId, season = 1, ep
   const [isLandscape, setIsLandscape] = useState(false);
   const [showOrientationPrompt, setShowOrientationPrompt] = useState(false);
   const [useMobileLayout, setUseMobileLayout] = useState(false);
+  const [adBlockerEnabled, setAdBlockerEnabled] = useState(false);
 
   const iframeRef = useRef(null);
   const cleanupRef = useRef(null);
@@ -233,6 +234,23 @@ const Watch = ({ isOpen, onClose, onUpdateUrl, mediaType, tmdbId, season = 1, ep
     );
   }
 
+  const toggleAdBlocker = () => {
+    setAdBlockerEnabled(!adBlockerEnabled);
+    
+    if (iframeRef.current) {
+      const currentSrc = iframeRef.current.src;
+      iframeRef.current.src = '';
+      setTimeout(() => {
+        if (iframeRef.current) { iframeRef.current.src = currentSrc; }
+      }, 100);
+    }
+  };
+
+  const getIframeSandbox = () => {
+    if (adBlockerEnabled) { return "allow-same-origin allow-scripts allow-forms allow-presentation"; }
+    return undefined;
+  };
+
   if (useMobileLayout) {
     return (
       <div className="fixed inset-0 bg-black z-50 flex flex-col">
@@ -289,6 +307,18 @@ const Watch = ({ isOpen, onClose, onUpdateUrl, mediaType, tmdbId, season = 1, ep
               </DropdownMenuContent>
             </DropdownMenu>
 
+            <button 
+              onClick={toggleAdBlocker}
+              className={`p-2 rounded-full transition-colors ${
+                adBlockerEnabled 
+                  ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                  : 'bg-zinc-900 text-white hover:bg-zinc-800'
+              }`}
+              title={adBlockerEnabled ? 'Disable Ad Blocker' : 'Enable Ad Blocker'}
+            >
+              <Shield className="w-4 h-4" />
+            </button>
+
             <button onClick={onClose} className="bg-zinc-900 text-white p-2 rounded-lg hover:bg-zinc-800 transition-colors">
               <X className="w-5 h-5" />
             </button>
@@ -296,7 +326,7 @@ const Watch = ({ isOpen, onClose, onUpdateUrl, mediaType, tmdbId, season = 1, ep
         </div>
 
         <div className="flex-1">
-          <iframe ref={iframeRef} src={currentUrl} className="w-full h-full" frameBorder="0" allowFullScreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" title={currentSource} />
+          <iframe ref={iframeRef} src={currentUrl} className="w-full h-full" frameBorder="0" allowFullScreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" sandbox={getIframeSandbox()} title={currentSource} />
         </div>
       </div>
     );
@@ -372,6 +402,18 @@ const Watch = ({ isOpen, onClose, onUpdateUrl, mediaType, tmdbId, season = 1, ep
               </DropdownMenuContent>
             </DropdownMenu>
 
+            <button
+              onClick={toggleAdBlocker}
+              className={`p-2.5 rounded-full transition-colors border-l border border-white/20 ${
+                adBlockerEnabled 
+                  ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                  : 'bg-zinc-900 text-white hover:bg-zinc-800'
+              }`}
+              title={adBlockerEnabled ? 'Disable Ad Blocker' : 'Enable Ad Blocker'}
+            >
+              <Shield className="w-5 h-5" />
+            </button>
+
             {/* Close Button */}
             <button
               onClick={onClose}
@@ -392,6 +434,7 @@ const Watch = ({ isOpen, onClose, onUpdateUrl, mediaType, tmdbId, season = 1, ep
               frameBorder="0"
               allowFullScreen
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              sandbox={getIframeSandbox()}
               title={currentSource}
             />
           </div>
