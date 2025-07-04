@@ -96,15 +96,10 @@ const DownloadSection = ({ item, mediaType, tmdbId }) => {
             {normalDownloads.map((download, index) => (
               <div key={index} className="block">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center p-4 bg-zinc-900 rounded-lg hover:bg-zinc-800/80 border border-white/15 transition-colors cursor-pointer">
-                  <div className="flex-grow flex flex-col md:flex-row items-start md:items-center mb-4 md:mb-0">
+                  <div className="flex items-start md:items-center mb-0">
                     <span className="text-white mb-2 md:mb-0 md:mr-4 font-medium">
                       {download.title}
                     </span>
-                    <div className="flex flex-wrap gap-2">
-                      <span className="text-xs px-2 py-1 bg-green-600/20 border border-green-600/30 rounded-full text-green-200">
-                        Stream
-                      </span>
-                    </div>
                   </div>
                   
                   <div className="flex items-center gap-3">
