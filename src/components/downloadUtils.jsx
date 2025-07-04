@@ -1,5 +1,6 @@
 import { fetchTmdb } from '../utils.jsx';
 import config from '../config.json';
+import { getShowboxDownloadLink } from './downloaders/showbox.jsx';
 
 const { baseTrackers } = config;
 
@@ -153,6 +154,18 @@ export const fetchTorrentGalaxyTorrents = async (imdbId) => {
   } catch (error) { console.warn('Failed to fetch TorrentGalaxy data:', error); return []; }
 };
 
+export const fetchShowboxDownload = async (tmdbId, mediaType, title) => {
+  try {
+    const downloadLink = await getShowboxDownloadLink(tmdbId, mediaType);
+    if (downloadLink) { return { url: downloadLink, title: title, source: 'Showbox', type: 'stream' }; }
+    
+    return null;
+  } catch (error) {
+    console.warn('Failed to fetch Showbox download:', error);
+    return null;
+  }
+};
+
 export const fetchAllTorrents = async (mediaType, tmdbId, item) => {
   try {
     const externalIds = await fetchTmdb(`/${mediaType}/${tmdbId}/external_ids`);
@@ -207,4 +220,25 @@ export const fetchAllTorrents = async (mediaType, tmdbId, item) => {
     console.log('Total torrents found:', allTorrents.length, allTorrents);
     return allTorrents;
   } catch (error) { console.error('Error fetching torrents:', error); throw error; }
+};
+
+export const fetchNormalDownloads = async (mediaType, tmdbId, item) => {
+  try {
+    const normalDownloads = [];
+    
+    // Fetch Showbox download
+    try {
+      const showboxDownload = await fetchShowboxDownload(tmdbId, mediaType, item.title || item.name);
+      if (showboxDownload) {
+        normalDownloads.push(showboxDownload);
+      }
+    } catch (error) {
+      console.warn('Failed to fetch Showbox download:', error);
+    }
+    
+    return normalDownloads;
+  } catch (error) {
+    console.error('Error fetching normal downloads:', error);
+    return [];
+  }
 };

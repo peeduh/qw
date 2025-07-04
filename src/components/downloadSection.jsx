@@ -1,32 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import { Copy, ExternalLink, Play, AlertCircle, Download } from 'lucide-react';
 import { toast } from 'sonner';
-import { fetchAllTorrents } from './downloadUtils.jsx';
+import { fetchAllTorrents, fetchNormalDownloads } from './downloadUtils.jsx';
 
 const DownloadSection = ({ item, mediaType, tmdbId }) => {
   const [torrents, setTorrents] = useState([]);
+  const [normalDownloads, setNormalDownloads] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchTorrents = async () => {
+    const fetchDownloads = async () => {
       if (!item || !mediaType || !tmdbId) return;
       
       setIsLoading(true);
       setError(null);
       
       try {
-        const allTorrents = await fetchAllTorrents(mediaType, tmdbId, item);
+        const [allTorrents, allNormalDownloads] = await Promise.all([ fetchAllTorrents(mediaType, tmdbId, item), fetchNormalDownloads(mediaType, tmdbId, item) ]);
+        
         setTorrents(allTorrents);
+        setNormalDownloads(allNormalDownloads);
       } catch (error) {
-        console.error('Error fetching torrents:', error);
+        console.error('Error fetching downloads:', error);
         setError(error.message);
       } finally {
         setIsLoading(false);
       }
     };
     
-    fetchTorrents();
+    fetchDownloads();
   }, [item, mediaType, tmdbId]);
 
   const handleCopyMagnet = (magnetUrl, e) => {
@@ -44,6 +47,19 @@ const DownloadSection = ({ item, mediaType, tmdbId }) => {
     } catch (error) {
       toast.error('You must have a torrenting client installed to download this file');
     }
+  };
+
+  const handleOpenStream = (streamUrl, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    window.open(streamUrl, '_blank');
+  };
+
+  const handleCopyStream = (streamUrl, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    navigator.clipboard.writeText(streamUrl);
+    toast.success('Stream link copied to clipboard');
   };
 
   if (isLoading) {
@@ -75,13 +91,54 @@ const DownloadSection = ({ item, mediaType, tmdbId }) => {
       <div className="space-y-4">
         <h2 className="text-2xl font-bold text-white">Normal Downloads</h2>
 
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center p-4 bg-zinc-900 rounded-lg hover:bg-zinc-800/80 border border-white/15 transition-colors cursor-pointer">
-          <div className="flex-grow flex flex-col md:flex-row items-start md:items-center mb-4 md:mb-0">
-            <span className="text-white mb-2 md:mb-0 md:mr-4 font-medium">
-              Coming soon
-            </span>
+        {normalDownloads.length > 0 ? (
+          <div className="space-y-3">
+            {normalDownloads.map((download, index) => (
+              <div key={index} className="block">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center p-4 bg-zinc-900 rounded-lg hover:bg-zinc-800/80 border border-white/15 transition-colors cursor-pointer">
+                  <div className="flex-grow flex flex-col md:flex-row items-start md:items-center mb-4 md:mb-0">
+                    <span className="text-white mb-2 md:mb-0 md:mr-4 font-medium">
+                      {download.title}
+                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      <span className="text-xs px-2 py-1 bg-green-600/20 border border-green-600/30 rounded-full text-green-200">
+                        Stream
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-zinc-400">{download.source}</span>
+                    <div className="flex space-x-2">
+                      <button 
+                        onClick={(e) => handleCopyStream(download.url, e)} 
+                        className="text-zinc-200 hover:text-white bg-white/15 hover:bg-white/25 p-2 rounded transition-colors cursor-pointer" 
+                        title="Copy stream link"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={(e) => handleOpenStream(download.url, e)} 
+                        className="text-zinc-200 hover:text-white bg-white/15 hover:bg-white/25 p-2 rounded transition-colors cursor-pointer" 
+                        title="Open stream link"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
+        ) : (
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center p-4 bg-zinc-900 rounded-lg hover:bg-zinc-800/80 border border-white/15 transition-colors cursor-pointer">
+            <div className="flex-grow flex flex-col md:flex-row items-start md:items-center mb-4 md:mb-0">
+              <span className="text-white mb-2 md:mb-0 md:mr-4 font-medium">
+                No normal downloads found
+              </span>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="space-y-4">
