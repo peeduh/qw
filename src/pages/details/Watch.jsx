@@ -3,6 +3,7 @@ import { X, Tv, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getSource } from './Sources.jsx';
 import { initializeSourceTracking } from '../../components/progress/index.jsx';
 import { fetchTmdb } from '../../utils.jsx';
+import MobileOrientationPrompt from './MobileOrientationPrompt.jsx';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,6 +18,10 @@ const Watch = ({ isOpen, onClose, onUpdateUrl, mediaType, tmdbId, season = 1, ep
   const [currentSeasonDetails, setCurrentSeasonDetails] = useState(null);
   const [id, setId] = useState(tmdbId);
   const [currentTitle, setCurrentTitle] = useState(title);
+  const [isMobile, setIsMobile] = useState(false);
+  const [isLandscape, setIsLandscape] = useState(false);
+  const [showOrientationPrompt, setShowOrientationPrompt] = useState(false);
+  const [useMobileLayout, setUseMobileLayout] = useState(false);
 
   const iframeRef = useRef(null);
   const cleanupRef = useRef(null);
@@ -31,6 +36,35 @@ const Watch = ({ isOpen, onClose, onUpdateUrl, mediaType, tmdbId, season = 1, ep
   ];
 
   const currentUrl = getSource(currentSource, mediaType, id, currentSeason, currentEpisode);
+
+  useEffect(() => {
+    const checkMobileAndOrientation = () => {
+      const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || window.innerWidth < 768;
+      
+      const landscape = window.innerWidth > window.innerHeight;
+      setIsMobile(isMobileDevice);
+      setIsLandscape(landscape);
+      
+      if (isMobileDevice && !landscape && isOpen && !useMobileLayout) { setShowOrientationPrompt(true); }
+      if (isMobileDevice) { setUseMobileLayout(true); }
+    };
+
+    checkMobileAndOrientation();
+    window.addEventListener('resize', checkMobileAndOrientation);
+    window.addEventListener('orientationchange', checkMobileAndOrientation);
+
+    return () => {
+      window.removeEventListener('resize', checkMobileAndOrientation);
+      window.removeEventListener('orientationchange', checkMobileAndOrientation);
+    };
+  }, [isOpen, useMobileLayout]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setUseMobileLayout(false);
+      setShowOrientationPrompt(false);
+    }
+  }, [isOpen]);
 
   // Update state when props change
   useEffect(() => {
@@ -190,6 +224,83 @@ const Watch = ({ isOpen, onClose, onUpdateUrl, mediaType, tmdbId, season = 1, ep
   }, []);
 
   if (!isOpen) return null;
+
+  if (showOrientationPrompt && isMobile && !isLandscape) {
+    return (
+      <MobileOrientationPrompt 
+        onContinue={() => setShowOrientationPrompt(false)}
+      />
+    );
+  }
+
+  if (useMobileLayout) {
+    return (
+      <div className="fixed inset-0 bg-black z-50 flex flex-col">
+        <div className="flex items-center justify-between p-4 bg-black/90">
+          <div className="flex items-center gap-2 flex-1">
+            {mediaType === 'tv' && (
+              <button onClick={goToPreviousEpisode} disabled={!canGoToPrevious()}
+                className={`p-2 rounded-full transition-colors ${
+                  canGoToPrevious() 
+                    ? 'text-white hover:bg-white/20 cursor-pointer' 
+                    : 'text-gray-500 cursor-not-allowed'
+                }`}
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+            )}
+            
+            <h2 className="text-white text-sm font-medium truncate">
+              {mediaType === 'tv' ? (
+                <span>S{currentSeason}E{currentEpisode} - {currentTitle}</span>
+              ) : (currentTitle)}
+            </h2>
+            
+            {mediaType === 'tv' && (
+              <button onClick={goToNextEpisode} disabled={!canGoToNext()}
+                className={`p-2 rounded-full transition-colors ${
+                  canGoToNext() 
+                    ? 'text-white hover:bg-white/20 cursor-pointer' 
+                    : 'text-gray-500 cursor-not-allowed'
+                }`}
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            )}
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger className="bg-zinc-900 text-white px-3 py-2 rounded-lg flex items-center gap-2 hover:bg-zinc-800 transition-colors">
+                <Tv className="w-4 h-4" />
+                <span className="text-sm">{currentSource}</span>
+                <ChevronDown className="h-3 w-3" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="bg-black/90 backdrop-blur-sm border border-white/20 rounded-xl shadow-lg z-50 min-w-[150px]">
+                {sources.map((source) => (
+                  <DropdownMenuItem key={source} onClick={() => handleSourceChange(source)}
+                    className={`px-4 py-2 text-white hover:bg-white/10 transition-colors ${
+                      currentSource === source ? 'bg-white/20' : ''
+                    }`}
+                  >
+                    {source}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <button onClick={onClose} className="bg-zinc-900 text-white p-2 rounded-lg hover:bg-zinc-800 transition-colors">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        <div className="flex-1">
+          <iframe ref={iframeRef} src={currentUrl} className="w-full h-full" frameBorder="0" allowFullScreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" title={currentSource} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
