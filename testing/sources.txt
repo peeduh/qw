@@ -1,14 +1,3 @@
-- https://kendrickl-3amar.site/{id}
-- https://vidlink.pro/api/b/tv/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAo1w04lKM3s0wlcYgf5ONQsmGDct6QFYZ2aO0ttg/1/1?multiLang=1
-- https://vidzee.wtf/movie/movie.php?id=696506
-- https://www.primewire.tf/links/go/zJA89?embed=true
-
-
 i might need to use playwright for:
-- https://xprime.tv/primebox?id=950387
-- https://fed-api.pstream.org/cache/tt3566834
+- https://fed-api-europe.pstream.org/cache/tt2861424/8/5
 - https://xj4h5qk3tf7v2mlr9s.uira.live/all/950387
-
-https://torrentio.strem.fun/providers=yts,eztv,rarbg,1337x,thepiratebay,kickasstorrents,torrentgalaxy,magnetdl,horriblesubs,nyaasi,tokyotosho,anidex/stream/movie/tt3566834.json
-AND
-https://savingshub.online/api/fetchHls?magnet=magnet%3A%3Fxt%3Durn%3Abtih%3Ab758690cd4d734bf752093604a8d01e65f15671e%26dn%3DTorrentio%250A1080p%26tr%3Dudp%253A%252F%252Ftracker.opentrackr.org%253A1337%252Fannounce%26tr%3Dudp%253A%252F%252Fopen.demonii.com%253A1337%252Fannounce%26tr%3Dudp%253A%252F%252Fopen.tracker.cl%253A1337%252Fannounce%26tr%3Dudp%253A%252F%252Fopen.stealth.si%253A80%252Fannounce%26tr%3Dudp%253A%252F%252Ftracker.torrent.eu.org%253A451%252Fannounce%26tr%3Dudp%253A%252F%252Fexplodie.org%253A6969%252Fannounce%26tr%3Dudp%253A%252F%252Ftracker.qu.ax%253A6969%252Fannounce%26tr%3Dudp%253A%252F%252Ftracker.ololosh.space%253A6969%252Fannounce%26tr%3Dudp%253A%252F%252Ftracker.dump.cl%253A6969%252Fannounce%26tr%3Dudp%253A%252F%252Ftracker.dler.org%253A6969%252Fannounce%26tr%3Dudp%253A%252F%252Ftracker.bittor.pw%253A1337%252Fannounce%26tr%3Dudp%253A%252F%252Ftracker-udp.gbitt.info%253A80%252Fannounce%26tr%3Dudp%253A%252F%252Fopentracker.io%253A6969%252Fannounce%26tr%3Dudp%253A%252F%252Fopen.free-tracker.ga%253A6969%252Fannounce%26tr%3Dudp%253A%252F%252Fns-1.x-fins.com%253A6969%252Fannounce%26tr%3Dudp%253A%252F%252Fleet-tracker.moe%253A1337%252Fannounce%26tr%3Dudp%253A%252F%252Fisk.richardsw.club%253A6969%252Fannounce%26tr%3Dudp%253A%252F%252Fdiscord.heihachi.pw%253A6969%252Fannounce%26tr%3Dhttp%253A%252F%252Fwww.torrentsnipe.info%253A2701%252Fannounce%26tr%3Dhttp%253A%252F%252Fwww.genesis-sp.org%253A2710%252Fannounce

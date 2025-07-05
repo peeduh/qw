@@ -166,6 +166,46 @@ export const fetchShowboxDownload = async (tmdbId, mediaType, title) => {
   }
 };
 
+export const fetchTorrentioTorrents = async (imdbId) => {
+  try {
+    const response = await fetch(`https://torrentio.strem.fun/providers=eztv,rarbg,1337x,kickasstorrents,magnetdl,horriblesubs,nyaasi,tokyotosho,anidex/stream/x/${imdbId}.json`);
+    const data = await response.json();
+    
+    const torrents = [];
+    
+    if (data.streams) {
+      data.streams.forEach(stream => {
+        try {
+          let cleanTitle = stream.title;
+          const thumbsUpIndex = cleanTitle.indexOf('\n👤');
+          if (thumbsUpIndex !== -1) { cleanTitle = cleanTitle.substring(0, thumbsUpIndex); }
+          
+          const tags = [];
+          if (stream.behaviorHints?.bingeGroup) {
+            const bingeGroup = stream.behaviorHints.bingeGroup;
+            const allowedTags = ['144p', '360p', '480p', '720p', '1080p', '1440p', '2160p', '4k', 'BluRay', 'WEB-DL', 'BDRip', 'x265', 'HDR', 'HDR10+', 'x264', 'hevc', 'h265'];
+            
+            allowedTags.forEach(tag => {
+              if (bingeGroup.toLowerCase().includes(tag.toLowerCase())) { tags.push(tag); }
+            });
+          }
+          
+          if (stream.infoHash) {
+            const magnetUrl = `magnet:?xt=urn:btih:${stream.infoHash}&dn=${encodeURIComponent(cleanTitle)}&${baseTrackers}`;
+            
+            torrents.push({ url: magnetUrl, title: cleanTitle, tags: tags, source: 'Torrentio' });
+          }
+        } catch (error) { console.warn('Error processing Torrentio stream:', error); }
+      });
+    }
+    
+    return torrents;
+  } catch (error) {
+    console.warn('Failed to fetch Torrentio data:', error);
+    return [];
+  }
+};
+
 export const fetchAllTorrents = async (mediaType, tmdbId, item) => {
   try {
     const externalIds = await fetchTmdb(`/${mediaType}/${tmdbId}/external_ids`);
@@ -196,6 +236,14 @@ export const fetchAllTorrents = async (mediaType, tmdbId, item) => {
         allTorrents.push(...movieTorrents);
       } catch (error) { console.warn('Failed to fetch YTS torrents:', error); }
     }
+
+    // Fetch Torrentio torrents
+    try {
+      console.log('Fetching Torrentio torrents for:', imdbId);
+      const torrentioTorrents = await fetchTorrentioTorrents(imdbId);
+      console.log('Torrentio torrents found:', torrentioTorrents.length);
+      allTorrents.push(...torrentioTorrents);
+    } catch (error) { console.warn('Failed to fetch Torrentio torrents:', error); }
 
     // Fetch TorrentGalaxy torrents
     try {
