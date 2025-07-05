@@ -98,6 +98,9 @@ const parseSearchResults = (html, tmdbData, contentType) => {
     const title = titleLink.getAttribute('title') || '';
     const href = titleLink.getAttribute('href') || '';
     
+    const hrefYearMatch = href.match(/(\d{4})$/);
+    const hrefYear = hrefYearMatch ? hrefYearMatch[1] : null;
+    
     const infoSection = item.querySelector('div.fd-infor');
     if (!infoSection) return;
     
@@ -133,10 +136,13 @@ const parseSearchResults = (html, tmdbData, contentType) => {
         }
       });
       
-      const itemData = {type: 'tv', name: title, season_number: seasonNumber, href: href};
+      const itemData = {type: 'tv', name: title, season_number: seasonNumber, href: href, href_year: hrefYear};
       results.push(itemData);
       
-      if (title.toLowerCase() === tmdbTitle.toLowerCase()) {matchedItem = itemData;}
+      if (title.toLowerCase() === tmdbTitle.toLowerCase()) {
+        if (seasonNumber && !matchedItem) { matchedItem = itemData; }
+        else if (!matchedItem && hrefYear === tmdbYear) { matchedItem = itemData; }
+      }
     }
   });
   

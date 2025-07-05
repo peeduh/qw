@@ -276,7 +276,8 @@ export const fetchNormalDownloads = async (mediaType, tmdbId, item) => {
     
     // Fetch Showbox download
     try {
-      const showboxDownload = await fetchShowboxDownload(tmdbId, mediaType, item.title || item.name);
+      const releaseYear = item.release_date?.split('-')[0] || item.first_air_date?.split('-')[0] || '';
+      const showboxDownload = await fetchShowboxDownload(tmdbId, mediaType, `${item.title || item.name} (${releaseYear})`);
       if (showboxDownload) {
         normalDownloads.push(showboxDownload);
       }
