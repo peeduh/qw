@@ -309,14 +309,14 @@ const Watch = ({ isOpen, onClose, onUpdateUrl, mediaType, tmdbId, season = 1, ep
 
             <button 
               onClick={toggleAdBlocker}
-              className={`p-2 rounded-full transition-colors ${
+              className={`p-2 rounded-lg transition-colors ${
                 adBlockerEnabled 
                   ? 'bg-blue-600 text-white hover:bg-blue-700' 
                   : 'bg-zinc-900 text-white hover:bg-zinc-800'
               }`}
               title={adBlockerEnabled ? 'Disable Ad Blocker' : 'Enable Ad Blocker'}
             >
-              <Shield className="w-4 h-4" />
+              <Shield className="w-5 h-5" />
             </button>
 
             <button onClick={onClose} className="bg-zinc-900 text-white p-2 rounded-lg hover:bg-zinc-800 transition-colors">
