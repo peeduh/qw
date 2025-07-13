@@ -39,22 +39,6 @@ const DownloadSection = ({ item, mediaType, tmdbId }) => {
     toast.success('Magnet link copied to clipboard');
   };
 
-  const handleOpenMagnet = (magnetUrl, e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    try {
-      window.location.href = magnetUrl;
-    } catch (error) {
-      toast.error('You must have a torrenting client installed to download this file');
-    }
-  };
-
-  const handleOpenStream = (streamUrl, e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    window.open(streamUrl, '_blank');
-  };
-
   const handleCopyStream = (streamUrl, e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -94,12 +78,19 @@ const DownloadSection = ({ item, mediaType, tmdbId }) => {
         {normalDownloads.length > 0 ? (
           <div className="space-y-3">
             {normalDownloads.map((download, index) => (
-              <div key={index} className="block">
+              <a key={index} href={download.url} target="_blank" rel="noopener noreferrer" className="block">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center p-4 bg-zinc-900 rounded-lg hover:bg-zinc-800/80 border border-white/15 transition-colors cursor-pointer">
-                  <div className="flex items-start md:items-center mb-0">
+                  <div className="flex-grow flex flex-col md:flex-row items-start md:items-center mb-4 md:mb-0">
                     <span className="text-white mb-2 md:mb-0 md:mr-4 font-medium">
                       {download.title}
                     </span>
+                    {download.tags && download.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {download.tags.map((tag, tagIndex) => (
+                          <span key={tagIndex} className="text-xs px-2 py-1 bg-white/15 rounded-full text-zinc-200">{tag}</span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   
                   <div className="flex items-center gap-3">
@@ -112,17 +103,20 @@ const DownloadSection = ({ item, mediaType, tmdbId }) => {
                       >
                         <Copy className="w-4 h-4" />
                       </button>
-                      <button 
-                        onClick={(e) => handleOpenStream(download.url, e)} 
+                      <a 
+                        href={download.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
                         className="text-zinc-200 hover:text-white bg-white/15 hover:bg-white/25 p-2 rounded transition-colors cursor-pointer" 
                         title="Open stream link"
                       >
                         <ExternalLink className="w-4 h-4" />
-                      </button>
+                      </a>
                     </div>
                   </div>
                 </div>
-              </div>
+              </a>
             ))}
           </div>
         ) : (
@@ -155,7 +149,7 @@ const DownloadSection = ({ item, mediaType, tmdbId }) => {
               </div>
             </div>
             {torrents.map((torrent, index) => (
-              <div key={index} className="block">
+              <a key={index} href={torrent.url} target={torrent.source === 'TorrentGalaxy' ? '_blank' : undefined} rel={torrent.source === 'TorrentGalaxy' ? 'noopener noreferrer' : undefined} className="block">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center p-4 bg-zinc-900 rounded-lg hover:bg-zinc-800/80 border border-white/15 transition-colors cursor-pointer">
                   <div className="flex-grow flex flex-col md:flex-row items-start md:items-center mb-4 md:mb-0">
                     <span className="text-white mb-2 md:mb-0 md:mr-4 font-medium">{torrent.title || item.title || item.name}</span>
@@ -172,13 +166,20 @@ const DownloadSection = ({ item, mediaType, tmdbId }) => {
                       <button onClick={(e) => handleCopyMagnet(torrent.url, e)} className="text-zinc-200 hover:text-white bg-white/15 hover:bg-white/25 p-2 rounded transition-colors cursor-pointer" title="Copy magnet link">
                         <Copy className="w-4 h-4" />
                       </button>
-                      <button onClick={(e) => handleOpenMagnet(torrent.url, e)} className="text-zinc-200 hover:text-white bg-white/15 hover:bg-white/25 p-2 rounded transition-colors cursor-pointer" title="Open magnet link">
-                        <Download className="w-4 h-4" />
-                      </button>
+                      <a 
+                        href={torrent.url}
+                        target={torrent.source === 'TorrentGalaxy' ? '_blank' : undefined}
+                        rel={torrent.source === 'TorrentGalaxy' ? 'noopener noreferrer' : undefined}
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-zinc-200 hover:text-white bg-white/15 hover:bg-white/25 p-2 rounded transition-colors cursor-pointer" 
+                        title={torrent.source === 'TorrentGalaxy' ? 'Open website' : 'Open magnet link'}
+                      >
+                        {torrent.source === 'TorrentGalaxy' ? <ExternalLink className="w-4 h-4" /> : <Download className="w-4 h-4" />}
+                      </a>
                     </div>
                   </div>
                 </div>
-              </div>
+              </a>
             ))}
           </div>
         ) : (

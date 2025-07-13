@@ -1,6 +1,7 @@
 import { fetchTmdb } from '../utils.jsx';
 import config from '../config.json';
 import { getShowboxDownloadLink } from './downloaders/showbox.jsx';
+import { getVegamoviesDownloads } from './downloaders/vegamovies.jsx';
 
 const { baseTrackers } = config;
 
@@ -157,7 +158,7 @@ export const fetchTorrentGalaxyTorrents = async (imdbId) => {
 export const fetchShowboxDownload = async (tmdbId, mediaType, title) => {
   try {
     const downloadLink = await getShowboxDownloadLink(tmdbId, mediaType);
-    if (downloadLink) { return { url: downloadLink, title: title, source: 'Showbox', type: 'stream' }; }
+    if (downloadLink) { return { url: downloadLink, title: title, source: 'Showbox', type: 'stream', tags: ['Account requried'] }; }
     
     return null;
   } catch (error) {
@@ -283,6 +284,17 @@ export const fetchNormalDownloads = async (mediaType, tmdbId, item) => {
       }
     } catch (error) {
       console.warn('Failed to fetch Showbox download:', error);
+    }
+    
+    if (mediaType === 'movie') {
+      try {
+        console.log('Fetching Vegamovies downloads for movie:', tmdbId);
+        const vegamoviesDownloads = await getVegamoviesDownloads(tmdbId);
+        console.log('Vegamovies downloads found:', vegamoviesDownloads.length);
+        normalDownloads.push(...vegamoviesDownloads);
+      } catch (error) {
+        console.warn('Failed to fetch Vegamovies downloads:', error);
+      }
     }
     
     return normalDownloads;

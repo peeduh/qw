@@ -64,35 +64,6 @@ def proxy():
         print(f"Error: {str(e)}")
         return jsonify({'error': 'An unexpected error occurred.'}), 500
 
-@app.route('/api/onionflixer', methods=['POST'])
-def onionflixer_api():
-    try:
-        data = request.get_json()
-        content_type = data.get('type')
-        imdb_id = data.get('imdbId')
-        tmdb_id = data.get('tmdbId')
-        season = data.get('season')
-        episode = data.get('episode')
-        
-        if not content_type: return jsonify({'error': 'type is required'})
-        if content_type not in ['movie', 'tv']: return jsonify({'error': 'type must be "movie" or "tv"'})
-        if content_type == 'movie' and not imdb_id: return jsonify({'error': 'imdbId is required for movies'})
-        if content_type == 'tv' and not all([tmdb_id, season, episode]): return jsonify({'error': 'tmdbId, season, and episode are required for TV shows'})
-        
-        m3u8_url = onionflixer.main(
-            content_type=content_type,
-            imdb_id=imdb_id,
-            tmdb_id=tmdb_id,
-            season=season,
-            episode=episode
-        )
-        
-        return jsonify({'m3u8_url': m3u8_url})
-
-    except Exception as e:
-        print(f"Error in onionflixer: {str(e)}")
-        return jsonify({'error': str(e)}), 500
-
 if __name__ == '__main__':
     # Configure Flask app for better connection handling
     app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0

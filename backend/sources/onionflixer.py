@@ -2,6 +2,8 @@ import requests, re
 import subprocess
 import json
 
+# NO LONGER WORKS DUE TO CLOUDFLARE CHECK
+
 def main(content_type, imdb_id=None, tmdb_id=None, season=None, episode=None):
     if content_type == 'movie': url = f"https://onflix.su/{imdb_id}"
     elif content_type == 'tv': url = f"https://onflix.su/{tmdb_id}-{season}-{episode}"
