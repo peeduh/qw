@@ -23,6 +23,9 @@ const Watch = ({ isOpen, onClose, onUpdateUrl, mediaType, tmdbId, season = 1, ep
   const [showOrientationPrompt, setShowOrientationPrompt] = useState(false);
   const [useMobileLayout, setUseMobileLayout] = useState(false);
   const [adBlockerEnabled, setAdBlockerEnabled] = useState(false);
+  const [showAdDisclaimer, setShowAdDisclaimer] = useState(() => {
+    return localStorage.getItem('hideAdDisclaimer') !== 'true';
+  });
 
   const iframeRef = useRef(null);
   const cleanupRef = useRef(null);
@@ -425,7 +428,7 @@ const Watch = ({ isOpen, onClose, onUpdateUrl, mediaType, tmdbId, season = 1, ep
         </div>
 
         {/* Video Player */}
-        <div className="flex-1 p-4 pt-0">
+        <div className="flex-1 p-4 pb-3 pt-0">
           <div className="w-full rounded-xl overflow-hidden aspect-video">
             <iframe
               ref={iframeRef}
@@ -438,6 +441,30 @@ const Watch = ({ isOpen, onClose, onUpdateUrl, mediaType, tmdbId, season = 1, ep
               title={currentSource}
             />
           </div>
+          
+          {/* Ad Blocker Disclaimer */}
+          {showAdDisclaimer && (
+            <div className="mt-3 flex flex-row justify-center w-full">
+              <div className="flex items-center flex-row gap-2 w-full relative">
+                <span className="text-white text-sm flex items-center justify-center w-full gap-2">Some sources have ads. To fully remove all ads, use{' '}
+                  <a href="https://chromewebstore.google.com/detail/ublock-origin/cjpalhdlnbpafiamejdnhcphjbkeiagm" target="_blank" rel="noopener noreferrer" className="text-black font-semibold bg-white rounded px-2 py-1 pr-2.5 tracking-tight flex items-center gap-1">
+                    <img src='https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/UBlock_Origin.svg/1200px-UBlock_Origin.svg.png' className='w-5 h-5'></img>
+                    uBlock Origin
+                  </a>
+                </span>
+                <button 
+                  onClick={() => {
+                    setShowAdDisclaimer(false);
+                    localStorage.setItem('hideAdDisclaimer', 'true');
+                  }}
+                  className="absolute right-0 text-white/60 hover:text-white transition-colors p-1"
+                  title="Hide disclaimer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
