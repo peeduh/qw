@@ -23,8 +23,9 @@ const Watch = ({ isOpen, onClose, onUpdateUrl, mediaType, tmdbId, season = 1, ep
   const [showOrientationPrompt, setShowOrientationPrompt] = useState(false);
   const [useMobileLayout, setUseMobileLayout] = useState(false);
   const [adBlockerEnabled, setAdBlockerEnabled] = useState(false);
-  const [showAdDisclaimer, setShowAdDisclaimer] = useState(() => {
-    return localStorage.getItem('hideAdDisclaimer') !== 'true';
+  const [showAdDisclaimer, setShowAdDisclaimer] = useState(true);
+  const [isAdDisclaimerCollapsed, setIsAdDisclaimerCollapsed] = useState(() => {
+    return localStorage.getItem('adDisclaimerCollapsed') === 'true';
   });
 
   const iframeRef = useRef(null);
@@ -429,7 +430,7 @@ const Watch = ({ isOpen, onClose, onUpdateUrl, mediaType, tmdbId, season = 1, ep
 
         {/* Video Player */}
         <div className="flex-1 p-4 pb-3 pt-0">
-          <div className="w-full rounded-xl overflow-hidden aspect-video">
+          <div className="w-full rounded-xl overflow-hidden aspect-video relative">
             <iframe
               ref={iframeRef}
               src={currentUrl}
@@ -440,31 +441,58 @@ const Watch = ({ isOpen, onClose, onUpdateUrl, mediaType, tmdbId, season = 1, ep
               sandbox={getIframeSandbox()}
               title={currentSource}
             />
-          </div>
-          
-          {/* Ad Blocker Disclaimer */}
-          {showAdDisclaimer && (
-            <div className="mt-3 flex flex-row justify-center w-full">
-              <div className="flex items-center flex-row gap-2 w-full relative">
-                <span className="text-white text-sm flex items-center justify-center w-full gap-2">Some sources have ads. To fully remove all ads, use{' '}
-                  <a href="https://chromewebstore.google.com/detail/ublock-origin/cjpalhdlnbpafiamejdnhcphjbkeiagm" target="_blank" rel="noopener noreferrer" className="text-black font-semibold bg-white rounded px-2 py-1 pr-2.5 tracking-tight flex items-center gap-1">
-                    <img src='https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/UBlock_Origin.svg/1200px-UBlock_Origin.svg.png' className='w-5 h-5'></img>
-                    uBlock Origin
-                  </a>
-                </span>
-                <button 
-                  onClick={() => {
-                    setShowAdDisclaimer(false);
-                    localStorage.setItem('hideAdDisclaimer', 'true');
-                  }}
-                  className="absolute right-0 text-white/60 hover:text-white transition-colors p-1"
-                  title="Hide disclaimer"
-                >
-                  <X className="w-4 h-4" />
-                </button>
+            
+            {/* Ad Blocker Disclaimer Overlay */}
+            {showAdDisclaimer && (
+              <div className="absolute top-2 right-2 z-10">
+                {isAdDisclaimerCollapsed ? (
+                  <button
+                    onClick={() => {
+                      setIsAdDisclaimerCollapsed(false);
+                      localStorage.setItem('adDisclaimerCollapsed', 'false');
+                    }}
+                    className="bg-black/80 backdrop-blur-sm text-white p-2 rounded-lg hover:bg-black/90 transition-colors border border-white/20"
+                    title="Show ad disclaimer"
+                  >
+                    <ChevronDown className="w-4 h-4" />
+                  </button>
+                ) : (
+                  <div className="bg-black/80 backdrop-blur-sm border border-white/20 rounded-lg px-3 py-1.5 pr-2.5">
+                    <div className="flex items-center justify-center gap-2">
+                      <div className="flex-1">
+                        <span className="text-white text-xs leading-relaxed flex items-center">
+                          Some sources have ads. To fully remove all ads, use{' '}
+                          <a 
+                            href="https://chromewebstore.google.com/detail/ublock-origin/cjpalhdlnbpafiamejdnhcphjbkeiagm" 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className="text-black font-semibold bg-white hover:bg-neutral-200 rounded px-1.5 py-0.5 tracking-tight inline-flex items-center gap-1 text-xs ml-1"
+                          >
+                            <img 
+                              src='https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/UBlock_Origin.svg/1200px-UBlock_Origin.svg.png' 
+                              className='w-3 h-3'
+                              alt="uBlock Origin"
+                            />
+                            uBlock Origin
+                          </a>
+                        </span>
+                      </div>
+                      <button 
+                        onClick={() => {
+                          setIsAdDisclaimerCollapsed(true);
+                          localStorage.setItem('adDisclaimerCollapsed', 'true');
+                        }}
+                        className="text-white/60 hover:text-white transition-colors flex-shrink-0"
+                        title="Collapse disclaimer"
+                      >
+                        <ChevronDown className="w-4 h-4 rotate-180" />
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </div>
