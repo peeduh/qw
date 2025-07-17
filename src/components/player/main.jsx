@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
 import PlayerTemplate from './template';
 import { initializeHLS, setupVideoEventListeners, handleSeek, skipTime, togglePlay, toggleMute, handleVolumeChange, toggleFullscreen, togglePictureInPicture, showControlsTemporarily, parseTimeToSeconds, changePlaybackSpeed, changeQuality } from './helpers';
+import { saveProgress, getProgress } from '../progress';
 
-const VideoPlayer = ({ videoUrl, onError, showCaptionsPopup, setShowCaptionsPopup, subtitlesEnabled, subtitleError, subtitlesLoading, availableSubtitles, selectedSubtitle, onSelectSubtitle, subtitleCues }) => {
+const VideoPlayer = ({ videoUrl, onError, showCaptionsPopup, setShowCaptionsPopup, subtitlesEnabled, subtitleError, subtitlesLoading, availableSubtitles, selectedSubtitle, onSelectSubtitle, subtitleCues, mediaId, mediaType, season = 0, episode = 0, sourceIndex = 0 }) => {
   // Video state
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -26,12 +27,116 @@ const VideoPlayer = ({ videoUrl, onError, showCaptionsPopup, setShowCaptionsPopu
   const [selectedQuality, setSelectedQuality] = useState(null);
   const [qualitiesLoading, setQualitiesLoading] = useState(false);
   
+  // Progress tracking state
+  const [progressLoaded, setProgressLoaded] = useState(false);
+  const [savedProgress, setSavedProgress] = useState(null);
+  
   // Refs
   const videoRef = useRef(null);
   const hlsRef = useRef(null);
   const playerRef = useRef(null);
   const controlsTimeoutRef = useRef(null);
   const progressBarRef = useRef(null);
+  const progressSaveTimeoutRef = useRef(null);
+
+  useEffect(() => {
+    if (mediaId && mediaType) {
+      const existingProgress = getProgress(parseInt(mediaId), mediaType, parseInt(season), parseInt(episode));
+      setSavedProgress(existingProgress);
+      setProgressLoaded(false);
+      console.log('Loaded saved progress:', existingProgress);
+    }
+  }, [mediaId, mediaType, season, episode]);
+
+  useEffect(() => {
+    if (!progressLoaded && savedProgress && savedProgress.watchedDuration > 0 && videoRef.current) {
+      const restorePosition = () => {
+        if (videoRef.current && videoRef.current.duration > 0 && videoRef.current.readyState >= 2) {
+          const targetTime = savedProgress.watchedDuration;
+          console.log(`Restoring video position to: ${targetTime} seconds`);
+          videoRef.current.currentTime = targetTime;
+          setProgressLoaded(true);
+          
+          // Remove all event listeners
+          videoRef.current.removeEventListener('loadedmetadata', restorePosition);
+          videoRef.current.removeEventListener('loadeddata', restorePosition);
+          videoRef.current.removeEventListener('canplay', restorePosition);
+          videoRef.current.removeEventListener('canplaythrough', restorePosition);
+        }
+      };
+
+      // Try to restore immediately if video is already ready
+      if (videoRef.current.duration > 0 && videoRef.current.readyState >= 2) {
+        restorePosition();
+      } else {
+        // Add multiple event listeners to catch when video becomes ready
+        videoRef.current.addEventListener('loadedmetadata', restorePosition);
+        videoRef.current.addEventListener('loadeddata', restorePosition);
+        videoRef.current.addEventListener('canplay', restorePosition);
+        videoRef.current.addEventListener('canplaythrough', restorePosition);
+      }
+
+      // Cleanup function
+      return () => {
+        if (videoRef.current) {
+          videoRef.current.removeEventListener('loadedmetadata', restorePosition);
+          videoRef.current.removeEventListener('loadeddata', restorePosition);
+          videoRef.current.removeEventListener('canplay', restorePosition);
+          videoRef.current.removeEventListener('canplaythrough', restorePosition);
+        }
+      };
+    } else if (!savedProgress || savedProgress.watchedDuration <= 0) {
+      setProgressLoaded(true);
+    }
+  }, [savedProgress, progressLoaded, videoUrl]);
+
+  // Save progress periodically
+  useEffect(() => {
+    if (mediaId && mediaType && currentTime > 0 && duration > 0 && progressLoaded) {
+      // Clear existing timeout
+      if (progressSaveTimeoutRef.current) {
+        clearTimeout(progressSaveTimeoutRef.current);
+      }
+      
+      // Save progress after 2 seconds of no time updates
+      progressSaveTimeoutRef.current = setTimeout(() => {
+        saveProgress({
+          id: parseInt(mediaId),
+          mediaType: mediaType,
+          season: parseInt(season),
+          episode: parseInt(episode),
+          sourceIndex: parseInt(sourceIndex),
+          fullDuration: Math.floor(duration),
+          watchedDuration: Math.floor(currentTime),
+          timestamp: Date.now()
+        });
+      }, 2000);
+    }
+    
+    return () => {
+      if (progressSaveTimeoutRef.current) {
+        clearTimeout(progressSaveTimeoutRef.current);
+      }
+    };
+  }, [currentTime, duration, mediaId, mediaType, season, episode, sourceIndex, progressLoaded]);
+
+  // Save progress when component unmounts or video changes
+  useEffect(() => {
+    return () => {
+      if (mediaId && mediaType && currentTime > 0 && duration > 0) {
+        saveProgress({
+          id: parseInt(mediaId),
+          mediaType: mediaType,
+          season: parseInt(season),
+          episode: parseInt(episode),
+          sourceIndex: parseInt(sourceIndex),
+          fullDuration: Math.floor(duration),
+          watchedDuration: Math.floor(currentTime),
+          timestamp: Date.now()
+        });
+      }
+    };
+  }, [videoUrl, mediaId, mediaType, season, episode, sourceIndex]);
 
   // Initialize HLS when videoUrl changes
   useEffect(() => {
@@ -39,6 +144,7 @@ const VideoPlayer = ({ videoUrl, onError, showCaptionsPopup, setShowCaptionsPopu
       setQualitiesLoading(true);
       initializeHLS(videoUrl, videoRef, hlsRef, onError, setAvailableQualities);
       setQualitiesLoading(false);
+      setProgressLoaded(false);
     }
 
     return () => {

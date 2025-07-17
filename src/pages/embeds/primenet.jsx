@@ -20,6 +20,8 @@ const PrimeNet = () => {
   const [subtitleError, setSubtitleError] = useState('');
   const [subtitleCues, setSubtitleCues] = useState([]);
 
+  const mediaType = season && episode ? 'tv' : 'movie';
+
   useEffect(() => {
     const fetchVideoUrl = async () => {
       try {
@@ -197,6 +199,12 @@ const PrimeNet = () => {
       selectedSubtitle={selectedSubtitle}
       onSelectSubtitle={selectSubtitle}
       subtitleCues={subtitleCues}
+      // Progress tracking props
+      mediaId={tmdbid}
+      mediaType={mediaType}
+      season={season ? parseInt(season) : 0}
+      episode={episode ? parseInt(episode) : 0}
+      sourceIndex={0} // PrimeNet source index
     />
   );
 };
