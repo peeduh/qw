@@ -5,12 +5,20 @@ import SettingsManager from './settings';
 import { formatTime } from './helpers';
 
 const ControlButton = ({ onClick, children, className = "", ...props }) => {
-  const baseClasses = "border-none cursor-pointer p-2 rounded-lg flex items-center justify-center transition-all duration-200 ease-in-out w-[46px] h-[46px] relative overflow-hidden";
+  const baseClasses = "border-none cursor-pointer p-2 rounded-lg flex items-center justify-center transition-all duration-200 ease-in-out w-[46px] h-[46px] relative overflow-hidden focus:outline-none";
   const defaultClasses = "bg-transparent text-white hover:bg-white/10 hover:scale-110 active:bg-white/20 active:scale-95";
+  
+  const handleKeyDown = (e) => {
+    if (e.key === ' ' || e.key === 'Spacebar') {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  };
   
   return (
     <button
       onClick={onClick}
+      onKeyDown={handleKeyDown}
       className={`${baseClasses} ${className || defaultClasses}`}
       {...props}
     >

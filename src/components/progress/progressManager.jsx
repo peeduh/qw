@@ -11,6 +11,10 @@ export function saveProgress(progressData) {
       timestamp: parseInt(progressData.timestamp || Date.now())
     };
     
+    if (!localStorage.getItem('continue')) {
+      localStorage.setItem('continue', '[]');
+    }
+    
     let continueData = JSON.parse(localStorage.getItem('continue') || '[]');
     
     const existingIndex = continueData.findIndex(item => 
@@ -46,6 +50,10 @@ export function saveProgress(progressData) {
 
 export function getProgress(mediaId, mediaType, season = 0, episode = 0) {
   try {
+    if (!localStorage.getItem('continue')) {
+      localStorage.setItem('continue', '[]');
+    }
+    
     const continueData = JSON.parse(localStorage.getItem('continue') || '[]');
     
     return continueData.find(item => 
@@ -62,6 +70,10 @@ export function getProgress(mediaId, mediaType, season = 0, episode = 0) {
 
 export function getAllProgress(mediaId, mediaType) {
   try {
+    if (!localStorage.getItem('continue')) {
+      localStorage.setItem('continue', '[]');
+    }
+    
     const continueData = JSON.parse(localStorage.getItem('continue') || '[]');
     
     return continueData.filter(item => 
@@ -76,6 +88,10 @@ export function getAllProgress(mediaId, mediaType) {
 
 export function getAllContinueWatching() {
   try {
+    if (!localStorage.getItem('continue')) {
+      localStorage.setItem('continue', '[]');
+    }
+    
     const continueData = JSON.parse(localStorage.getItem('continue') || '[]');
     
     // Sort by timestamp (most recent first) and filter out completed items

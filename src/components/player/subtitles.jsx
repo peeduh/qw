@@ -15,12 +15,20 @@ const transformFlagUrl = (flagUrl) => {
 };
 
 const SubtitleManager = ({ showCaptionsPopup, setShowCaptionsPopup, subtitlesEnabled, subtitleError, subtitlesLoading, availableSubtitles, selectedSubtitle, selectSubtitle }) => {
+  const handleKeyDown = (e) => {
+    if (e.key === ' ' || e.key === 'Spacebar') {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  };
+
   return (
     <div className="relative captions-popup-container">
       <DropdownMenu open={showCaptionsPopup} onOpenChange={setShowCaptionsPopup}>
         <DropdownMenuTrigger asChild>
           <button
-            className={`border-none cursor-pointer p-2 rounded-lg flex items-center justify-center transition-all duration-200 ease-in-out w-[46px] h-[46px] relative overflow-hidden ${
+            onKeyDown={handleKeyDown}
+            className={`border-none cursor-pointer p-2 rounded-lg flex items-center justify-center transition-all duration-200 ease-in-out w-[46px] h-[46px] relative overflow-hidden focus:outline-none ${
               subtitlesEnabled 
                 ? "bg-white text-black hover:bg-gray-200 hover:scale-110 active:bg-gray-300 active:scale-95" 
                 : "bg-transparent text-white hover:bg-white/10 hover:scale-110 active:bg-white/20 active:scale-95"

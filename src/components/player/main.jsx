@@ -97,15 +97,15 @@ const VideoPlayer = ({ videoUrl, onError, showCaptionsPopup, setShowCaptionsPopu
     }
   }, [savedProgress, progressLoaded, videoUrl]);
 
-  // Save progress periodically
+  // Save progress every 2 seconds unconditionally
   useEffect(() => {
-    if (mediaId && mediaType && currentTime > 0 && duration > 0 && progressLoaded) {
+    if (mediaId && mediaType && duration > 0) {
       // Clear existing timeout
       if (progressSaveTimeoutRef.current) {
         clearTimeout(progressSaveTimeoutRef.current);
       }
       
-      // Save progress after 2 seconds of no time updates
+      // Save progress every 2 seconds regardless of conditions
       progressSaveTimeoutRef.current = setTimeout(() => {
         saveProgress({
           id: parseInt(mediaId),
@@ -125,7 +125,23 @@ const VideoPlayer = ({ videoUrl, onError, showCaptionsPopup, setShowCaptionsPopu
         clearTimeout(progressSaveTimeoutRef.current);
       }
     };
-  }, [currentTime, duration, mediaId, mediaType, season, episode, sourceIndex, progressLoaded]);
+  }, [currentTime, duration, mediaId, mediaType, season, episode, sourceIndex]);
+
+  // Helper function to save progress immediately
+  const saveProgressNow = () => {
+    if (mediaId && mediaType && duration > 0) {
+      saveProgress({
+        id: parseInt(mediaId),
+        mediaType: mediaType,
+        season: parseInt(season),
+        episode: parseInt(episode),
+        sourceIndex: parseInt(sourceIndex),
+        fullDuration: Math.floor(duration),
+        watchedDuration: Math.floor(currentTime),
+        timestamp: Date.now()
+      });
+    }
+  };
 
   // Save progress when component unmounts or video changes
   useEffect(() => {
@@ -276,11 +292,13 @@ const VideoPlayer = ({ videoUrl, onError, showCaptionsPopup, setShowCaptionsPopu
 
   const handleTogglePlay = () => {
     togglePlay(isPlaying, videoRef);
+    saveProgressNow();
   };
 
   const handleProgressMouseDown = (e) => {
     setIsDragging(true);
     handleSeek(e, videoRef, duration, progressBarRef);
+    saveProgressNow();
     e.preventDefault();
   };
 
@@ -294,19 +312,23 @@ const VideoPlayer = ({ videoUrl, onError, showCaptionsPopup, setShowCaptionsPopu
 
   const handleSkipTime = (seconds) => {
     skipTime(seconds, videoRef);
+    saveProgressNow();
   };
 
   const handleToggleMute = () => {
     toggleMute(videoRef);
+    saveProgressNow();
   };
 
   const handleVolumeChangeEvent = (e) => {
     handleVolumeChange(e, videoRef);
+    saveProgressNow();
   };
 
   const handleVolumeSliderMouseDown = (e) => {
     setIsVolumeDragging(true);
     handleVolumeSliderSeek(e);
+    saveProgressNow();
     e.preventDefault();
   };
 
@@ -316,19 +338,23 @@ const VideoPlayer = ({ videoUrl, onError, showCaptionsPopup, setShowCaptionsPopu
       const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
       videoRef.current.volume = pos;
       videoRef.current.muted = pos === 0;
+      saveProgressNow();
     }
   };
 
   const handleToggleFullscreen = () => {
     toggleFullscreen(playerRef, setIsFullscreen);
+    saveProgressNow();
   };
 
   const handleTogglePictureInPicture = () => {
     togglePictureInPicture(videoRef, isPictureInPicture);
+    saveProgressNow();
   };
 
   const handleSelectSubtitle = (subtitle) => {
     onSelectSubtitle(subtitle, videoRef);
+    saveProgressNow();
   };
 
   const handleVideoError = (e) => {
@@ -340,12 +366,101 @@ const VideoPlayer = ({ videoUrl, onError, showCaptionsPopup, setShowCaptionsPopu
   const handleSpeedChange = (speed) => {
     setPlaybackSpeed(speed);
     changePlaybackSpeed(speed, videoRef);
+    saveProgressNow();
   };
 
   const handleQualityChange = (quality) => {
     setSelectedQuality(quality);
     changeQuality(quality, hlsRef, videoRef, currentTime);
+    saveProgressNow();
   };
+
+  // Handle global keyboard events
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') {
+        return;
+      }
+
+      const handledKeys = [' ', 'Spacebar', 'k', 'K', 'ArrowRight', 'l', 'L', 'ArrowLeft', 'j', 'J', 'ArrowUp', 'ArrowDown', 'm', 'M', 'f', 'F'];
+      if (handledKeys.includes(e.key)) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+
+      switch (e.key) {
+        // Play/pause: Spacebar or K
+        case ' ':
+        case 'Spacebar':
+          if (document.activeElement.tagName !== 'BUTTON') {
+            handleTogglePlay();
+          }
+          break;
+        case 'k':
+        case 'K':
+          handleTogglePlay();
+          break;
+        
+        // +10s: Right arrow or L
+        case 'ArrowRight':
+        case 'l':
+        case 'L':
+          handleSkipTime(10);
+          break;
+        
+        // -10s: Left arrow or J
+        case 'ArrowLeft':
+        case 'j':
+        case 'J':
+          handleSkipTime(-10);
+          break;
+        
+        // Volume controls
+        case 'ArrowUp':
+          if (videoRef.current) {
+            const newVolume = Math.min(1, videoRef.current.volume + 0.1);
+            videoRef.current.volume = newVolume;
+            if (videoRef.current.muted && newVolume > 0) {
+              videoRef.current.muted = false;
+            }
+            saveProgressNow();
+          }
+          break;
+
+        case 'ArrowDown':
+          if (videoRef.current) {
+            const newVolume = Math.max(0, videoRef.current.volume - 0.1);
+            videoRef.current.volume = newVolume;
+            if (newVolume === 0) {
+              videoRef.current.muted = true;
+            }
+            saveProgressNow();
+          }
+          break;
+        
+        // Mute: M
+        case 'm':
+        case 'M':
+          handleToggleMute();
+          break;
+        
+        // Fullscreen: F
+        case 'f':
+        case 'F':
+          handleToggleFullscreen();
+          break;
+        
+        default:
+          break;
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isPlaying, handleTogglePlay, handleSkipTime, handleToggleMute, handleToggleFullscreen]);
 
   return (
     <PlayerTemplate
