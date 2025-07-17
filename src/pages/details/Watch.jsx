@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Tv, ChevronDown, ChevronLeft, ChevronRight, Shield } from 'lucide-react';
+import { X, Tv, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getSource } from './Sources.jsx';
 import { initializeSourceTracking } from '../../components/progress/index.jsx';
 import { fetchTmdb } from '../../utils.jsx';
@@ -22,7 +22,6 @@ const Watch = ({ isOpen, onClose, onUpdateUrl, mediaType, tmdbId, season = 1, ep
   const [isLandscape, setIsLandscape] = useState(false);
   const [showOrientationPrompt, setShowOrientationPrompt] = useState(false);
   const [useMobileLayout, setUseMobileLayout] = useState(false);
-  const [adBlockerEnabled, setAdBlockerEnabled] = useState(false);
   const [showAdDisclaimer, setShowAdDisclaimer] = useState(true);
   const [isAdDisclaimerCollapsed, setIsAdDisclaimerCollapsed] = useState(() => {
     return localStorage.getItem('adDisclaimerCollapsed') === 'true';
@@ -40,6 +39,16 @@ const Watch = ({ isOpen, onClose, onUpdateUrl, mediaType, tmdbId, season = 1, ep
     'VidsrcSU',
     'Vidora',
   ];
+
+  const sourceHasAds = (source) => {
+    const sourcesWithAds = ['VidLink', 'VidsrcXYZ', 'VidFast'];
+    return sourcesWithAds.includes(source);
+  };
+
+  const sourceNeedsSandbox = (source) => {
+    const sourcesWithSandbox = ['Videasy', 'VidsrcSU'];
+    return sourcesWithSandbox.includes(source);
+  };
 
   const currentUrl = getSource(currentSource, mediaType, id, currentSeason, currentEpisode);
 
@@ -197,6 +206,16 @@ const Watch = ({ isOpen, onClose, onUpdateUrl, mediaType, tmdbId, season = 1, ep
     }
     
     setCurrentSource(source);
+    
+    if (iframeRef.current) {
+      iframeRef.current.src = '';
+      setTimeout(() => {
+        if (iframeRef.current) {
+          const newUrl = getSource(source, mediaType, id, currentSeason, currentEpisode);
+          iframeRef.current.src = newUrl;
+        }
+      }, 100);
+    }
   };
   
   useEffect(() => {
@@ -239,20 +258,10 @@ const Watch = ({ isOpen, onClose, onUpdateUrl, mediaType, tmdbId, season = 1, ep
     );
   }
 
-  const toggleAdBlocker = () => {
-    setAdBlockerEnabled(!adBlockerEnabled);
-    
-    if (iframeRef.current) {
-      const currentSrc = iframeRef.current.src;
-      iframeRef.current.src = '';
-      setTimeout(() => {
-        if (iframeRef.current) { iframeRef.current.src = currentSrc; }
-      }, 100);
-    }
-  };
-
   const getIframeSandbox = () => {
-    if (adBlockerEnabled) { return "allow-same-origin allow-scripts allow-forms allow-presentation"; }
+    if (sourceNeedsSandbox(currentSource)) {
+      return "allow-same-origin allow-scripts allow-forms allow-presentation";
+    }
     return undefined;
   };
 
@@ -311,18 +320,6 @@ const Watch = ({ isOpen, onClose, onUpdateUrl, mediaType, tmdbId, season = 1, ep
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
-
-            <button 
-              onClick={toggleAdBlocker}
-              className={`p-2 rounded-lg transition-colors ${
-                adBlockerEnabled 
-                  ? 'bg-blue-600 text-white hover:bg-blue-700' 
-                  : 'bg-zinc-900 text-white hover:bg-zinc-800'
-              }`}
-              title={adBlockerEnabled ? 'Disable Ad Blocker' : 'Enable Ad Blocker'}
-            >
-              <Shield className="w-5 h-5" />
-            </button>
 
             <button onClick={onClose} className="bg-zinc-900 text-white p-2 rounded-lg hover:bg-zinc-800 transition-colors">
               <X className="w-5 h-5" />
@@ -407,18 +404,6 @@ const Watch = ({ isOpen, onClose, onUpdateUrl, mediaType, tmdbId, season = 1, ep
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <button
-              onClick={toggleAdBlocker}
-              className={`p-2.5 rounded-full transition-colors border-l border border-white/20 ${
-                adBlockerEnabled 
-                  ? 'bg-blue-600 text-white hover:bg-blue-700' 
-                  : 'bg-zinc-900 text-white hover:bg-zinc-800'
-              }`}
-              title={adBlockerEnabled ? 'Disable Ad Blocker' : 'Enable Ad Blocker'}
-            >
-              <Shield className="w-5 h-5" />
-            </button>
-
             {/* Close Button */}
             <button
               onClick={onClose}
@@ -444,7 +429,7 @@ const Watch = ({ isOpen, onClose, onUpdateUrl, mediaType, tmdbId, season = 1, ep
             />
             
             {/* Ad Blocker Disclaimer Overlay */}
-            {showAdDisclaimer && (
+            {showAdDisclaimer && sourceHasAds(currentSource) && (
               <div className="absolute top-2 right-2 z-10">
                 {isAdDisclaimerCollapsed ? (
                   <button
@@ -462,7 +447,7 @@ const Watch = ({ isOpen, onClose, onUpdateUrl, mediaType, tmdbId, season = 1, ep
                     <div className="flex items-center justify-center gap-2">
                       <div className="flex-1">
                         <span className="text-white text-xs leading-relaxed flex items-center">
-                          Some sources have ads. To fully remove all ads, use{' '}
+                          This source has ads. To fully remove all ads, use{' '}
                           <a 
                             href="https://chromewebstore.google.com/detail/ublock-origin/cjpalhdlnbpafiamejdnhcphjbkeiagm" 
                             target="_blank" 
