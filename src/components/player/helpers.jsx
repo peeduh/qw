@@ -10,7 +10,7 @@ export const formatTime = (time) => {
   }
 };
 
-export const initializeHLS = async (videoUrl, videoRef, hlsRef, setError) => {
+export const initializeHLS = async (videoUrl, videoRef, hlsRef, setError, setAvailableQualities) => {
   if (!videoUrl || !videoRef.current) return;
 
   try {
@@ -40,12 +40,34 @@ export const initializeHLS = async (videoUrl, videoRef, hlsRef, setError) => {
         }
       });
 
+      // Extract quality levels
+      hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
+        if (setAvailableQualities && data.levels) {
+          const qualities = data.levels.map((level, index) => ({
+            index,
+            height: level.height,
+            width: level.width,
+            bitrate: level.bitrate,
+            quality: level.height ? `${level.height}p` : 'Unknown',
+            url: level.url
+          }));
+          
+          qualities.sort((a, b) => b.height - a.height);
+          
+          setAvailableQualities(qualities);
+        }
+      });
+
       hls.loadSource(videoUrl);
       hls.attachMedia(videoRef.current);
       
     } else if (videoRef.current.canPlayType('application/vnd.apple.mpegurl')) {
       // Native HLS support (Safari)
       videoRef.current.src = videoUrl;
+      // For native HLS, we can't extract quality levels easily
+      if (setAvailableQualities) {
+        setAvailableQualities([]);
+      }
     } else {
       setError('HLS is not supported in this browser');
     }
@@ -167,4 +189,73 @@ export const showControlsTemporarily = (
       setShowControls(false);
     }
   }, 3000);
+};
+
+export const parseTimeToSeconds = (timeString) => {
+  const [hours, minutes, seconds] = timeString.split(':');
+  const [secs, millisecs] = seconds.split(/[,.]/);
+  return parseInt(hours) * 3600 + parseInt(minutes) * 60 + parseInt(secs) + (parseInt(millisecs || 0) / 1000);
+};
+
+export const changePlaybackSpeed = (speed, videoRef) => {
+  if (videoRef.current) {
+    videoRef.current.playbackRate = speed;
+  }
+};
+
+export const changeQuality = (quality, hlsRef, videoRef, currentTime) => {
+  if (!hlsRef.current || !quality) return;
+
+  const hls = hlsRef.current;
+  
+  hls.currentLevel = quality.index;
+  
+  if (videoRef.current && currentTime) {
+    const preserveTime = currentTime;
+    const preservePlayState = !videoRef.current.paused;
+    
+    const handleLoadedData = () => {
+      videoRef.current.currentTime = preserveTime;
+      if (preservePlayState) {
+        videoRef.current.play();
+      }
+      videoRef.current.removeEventListener('loadeddata', handleLoadedData);
+    };
+    
+    videoRef.current.addEventListener('loadeddata', handleLoadedData);
+  }
+};
+
+export const extractQualitiesFromM3U8 = async (m3u8Url) => {
+  try {
+    const response = await fetch(m3u8Url);
+    const m3u8Text = await response.text();
+    
+    const qualities = [];
+    const lines = m3u8Text.split('\n');
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (line.startsWith('#EXT-X-STREAM-INF:')) {
+        const resolutionMatch = line.match(/RESOLUTION=(\d+)x(\d+)/);
+        const bandwidthMatch = line.match(/BANDWIDTH=(\d+)/);
+        
+        if (resolutionMatch && lines[i + 1]) {
+          const width = parseInt(resolutionMatch[1]);
+          const height = parseInt(resolutionMatch[2]);
+          const bandwidth = bandwidthMatch ? parseInt(bandwidthMatch[1]) : 0;
+          const url = lines[i + 1].trim();
+          
+          qualities.push({ index: qualities.length, width, height, bitrate: bandwidth, quality: `${height}p`, url: url.startsWith('http') ? url : new URL(url, m3u8Url).href });
+        }
+      }
+    }
+    
+    qualities.sort((a, b) => b.height - a.height);
+    
+    return qualities;
+  } catch (error) {
+    console.error('Error extracting qualities from M3U8:', error);
+    return [];
+  }
 };

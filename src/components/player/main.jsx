@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
 import PlayerTemplate from './template';
-import { initializeHLS, setupVideoEventListeners, handleSeek, skipTime, togglePlay, toggleMute, handleVolumeChange, toggleFullscreen, togglePictureInPicture, showControlsTemporarily } from './helpers';
+import { initializeHLS, setupVideoEventListeners, handleSeek, skipTime, togglePlay, toggleMute, handleVolumeChange, toggleFullscreen, togglePictureInPicture, showControlsTemporarily, parseTimeToSeconds, changePlaybackSpeed, changeQuality } from './helpers';
 
-const VideoPlayer = ({ videoUrl, onError, showCaptionsPopup, setShowCaptionsPopup, subtitlesEnabled, subtitleError, subtitlesLoading, availableSubtitles, selectedSubtitle, onSelectSubtitle }) => {
+const VideoPlayer = ({ videoUrl, onError, showCaptionsPopup, setShowCaptionsPopup, subtitlesEnabled, subtitleError, subtitlesLoading, availableSubtitles, selectedSubtitle, onSelectSubtitle, subtitleCues }) => {
   // Video state
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -16,6 +16,16 @@ const VideoPlayer = ({ videoUrl, onError, showCaptionsPopup, setShowCaptionsPopu
   const [bufferedAmount, setBufferedAmount] = useState(0);
   const [isProgressHovered, setIsProgressHovered] = useState(false);
   
+  // Subtitle state
+  const [currentSubtitleText, setCurrentSubtitleText] = useState('');
+  
+  // Settings state
+  const [showSettingsPopup, setShowSettingsPopup] = useState(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  const [availableQualities, setAvailableQualities] = useState([]);
+  const [selectedQuality, setSelectedQuality] = useState(null);
+  const [qualitiesLoading, setQualitiesLoading] = useState(false);
+  
   // Refs
   const videoRef = useRef(null);
   const hlsRef = useRef(null);
@@ -26,7 +36,9 @@ const VideoPlayer = ({ videoUrl, onError, showCaptionsPopup, setShowCaptionsPopu
   // Initialize HLS when videoUrl changes
   useEffect(() => {
     if (videoUrl) {
-      initializeHLS(videoUrl, videoRef, hlsRef, onError);
+      setQualitiesLoading(true);
+      initializeHLS(videoUrl, videoRef, hlsRef, onError, setAvailableQualities);
+      setQualitiesLoading(false);
     }
 
     return () => {
@@ -40,6 +52,27 @@ const VideoPlayer = ({ videoUrl, onError, showCaptionsPopup, setShowCaptionsPopu
   useEffect(() => {
     return setupVideoEventListeners(videoRef, setCurrentTime, setDuration, setIsPlaying, setVolume, setIsMuted, setIsPictureInPicture, setBufferedAmount);
   }, [videoUrl]);
+
+  useEffect(() => {
+    if (availableQualities.length > 0 && !selectedQuality) {
+      setSelectedQuality(availableQualities[0]);
+    }
+  }, [availableQualities, selectedQuality]);
+
+  useEffect(() => {
+    if (!subtitlesEnabled || !selectedSubtitle || !subtitleCues || subtitleCues.length === 0) {
+      setCurrentSubtitleText('');
+      return;
+    }
+
+    const currentCue = subtitleCues.find(cue => {
+      const startTime = parseTimeToSeconds(cue.startTime);
+      const endTime = parseTimeToSeconds(cue.endTime);
+      return currentTime >= startTime && currentTime <= endTime;
+    });
+
+    setCurrentSubtitleText(currentCue ? currentCue.text : '');
+  }, [currentTime, subtitlesEnabled, selectedSubtitle, subtitleCues]);
 
   // Handle progress bar dragging
   useEffect(() => {
@@ -111,6 +144,17 @@ const VideoPlayer = ({ videoUrl, onError, showCaptionsPopup, setShowCaptionsPopu
     onError('Video playback failed. Please try again.');
   };
 
+  // Settings handlers
+  const handleSpeedChange = (speed) => {
+    setPlaybackSpeed(speed);
+    changePlaybackSpeed(speed, videoRef);
+  };
+
+  const handleQualityChange = (quality) => {
+    setSelectedQuality(quality);
+    changeQuality(quality, hlsRef, videoRef, currentTime);
+  };
+
   return (
     <PlayerTemplate
       // Video refs
@@ -139,6 +183,15 @@ const VideoPlayer = ({ videoUrl, onError, showCaptionsPopup, setShowCaptionsPopu
       subtitlesLoading={subtitlesLoading}
       availableSubtitles={availableSubtitles}
       selectedSubtitle={selectedSubtitle}
+      currentSubtitleText={currentSubtitleText}
+      
+      // Settings state
+      showSettingsPopup={showSettingsPopup}
+      setShowSettingsPopup={setShowSettingsPopup}
+      playbackSpeed={playbackSpeed}
+      availableQualities={availableQualities}
+      selectedQuality={selectedQuality}
+      qualitiesLoading={qualitiesLoading}
       
       // Event handlers
       onMouseMove={handleMouseMove}
@@ -153,6 +206,8 @@ const VideoPlayer = ({ videoUrl, onError, showCaptionsPopup, setShowCaptionsPopu
       onTogglePictureInPicture={handleTogglePictureInPicture}
       onSelectSubtitle={handleSelectSubtitle}
       onVideoError={handleVideoError}
+      onSpeedChange={handleSpeedChange}
+      onQualityChange={handleQualityChange}
     />
   );
 };

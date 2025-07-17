@@ -7,6 +7,7 @@ import VideoPlayer from '../../components/player/main';
 const PrimeNet = () => {
   const { tmdbid, season, episode } = useParams();
   const [videoUrl, setVideoUrl] = useState('');
+  const [originalM3U8Url, setOriginalM3U8Url] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
@@ -17,8 +18,7 @@ const PrimeNet = () => {
   const [selectedSubtitle, setSelectedSubtitle] = useState(null);
   const [subtitlesLoading, setSubtitlesLoading] = useState(false);
   const [subtitleError, setSubtitleError] = useState('');
-  
-  const trackRef = useRef(null);
+  const [subtitleCues, setSubtitleCues] = useState([]);
 
   useEffect(() => {
     const fetchVideoUrl = async () => {
@@ -34,6 +34,8 @@ const PrimeNet = () => {
         if (!response.ok) { throw new Error(`HTTP error! status: ${response.status}`); }
         const data = await response.json();
         if (!data.url) { throw new Error('No video URL found in response'); }
+        
+        setOriginalM3U8Url(data.url);
         
         const proxiedUrl = `${config.m3u8proxy}/m3u8-proxy?url=${encodeURIComponent(data.url)}&headers=${encodeURIComponent(JSON.stringify({'referer': 'https://xprime.tv/'}))}`;
         setVideoUrl(proxiedUrl);
@@ -88,14 +90,11 @@ const PrimeNet = () => {
     setSelectedSubtitle(subtitle);
     
     if (subtitle === null) {
-      // "No subtitles" was selected - disable subtitles and remove any tracks
       setSubtitlesEnabled(false);
-      removeSubtitleTrack(videoRef);
+      setSubtitleCues([]);
     } else {
-      // A specific subtitle was selected - enable subtitles and load the track
       setSubtitlesEnabled(true);
-      removeSubtitleTrack(videoRef);
-      await loadSubtitleTrack(subtitle, videoRef);
+      await loadSubtitleCues(subtitle);
     }
   };
 
@@ -125,12 +124,10 @@ const PrimeNet = () => {
     return cues;
   };
 
-  const loadSubtitleTrack = async (subtitle, videoRef) => {
-    if (!videoRef?.current || !subtitle) return;
+  const loadSubtitleCues = async (subtitle) => {
+    if (!subtitle) return;
 
     try {
-      removeSubtitleTrack(videoRef);
-
       let subtitleText = '';
       
       if (subtitle.url && subtitle.url.startsWith('http')) {
@@ -150,52 +147,15 @@ const PrimeNet = () => {
         throw new Error('No subtitle content or URL available');
       }
       
-      // Parse SRT manually
+      // Parse SRT and set cues
       const parsedSrt = parseSRT(subtitleText);
-      
-      // Convert parsed SRT to VTT format
-      let vttContent = 'WEBVTT\n\n';
-      
-      parsedSrt.forEach((cue, index) => {
-        // Convert time format from SRT to VTT
-        const startTime = (cue.startTime).replace(',', '.');
-        const endTime = (cue.endTime).replace(',', '.');
-        
-        vttContent += `${index + 1}\n`;
-        vttContent += `${startTime} --> ${endTime}\n`;
-        vttContent += `${cue.text}\n\n`;
-      });
-      
-      const blob = new Blob([vttContent], { type: 'text/vtt' });
-      const url = URL.createObjectURL(blob);
-      
-      const track = document.createElement('track');
-      track.kind = 'subtitles';
-      track.label = subtitle.language || 'Unknown';
-      track.srclang = subtitle.language || 'en';
-      track.src = url;
-      track.default = true;
-      
-      videoRef.current.appendChild(track);
-      trackRef.current = track;
-      
-      track.addEventListener('load', () => {
-        if (track.track) { track.track.mode = 'showing'; }
-      });
-      
-      setTimeout(() => { URL.revokeObjectURL(url); }, 10000);
+      setSubtitleCues(parsedSrt);
       
     } catch (err) {
       console.error(err);
       setSubtitleError(`Failed to load subtitles: ${err.message}`);
       setTimeout(() => setSubtitleError(''), 3000);
-    }
-  };
-
-  const removeSubtitleTrack = (videoRef) => {
-    if (trackRef.current && videoRef?.current) {
-      videoRef.current.removeChild(trackRef.current);
-      trackRef.current = null;
+      setSubtitleCues([]);
     }
   };
 
@@ -226,6 +186,7 @@ const PrimeNet = () => {
   return (
     <VideoPlayer
       videoUrl={videoUrl}
+      originalM3U8Url={originalM3U8Url}
       onError={setError}
       showCaptionsPopup={showCaptionsPopup}
       setShowCaptionsPopup={setShowCaptionsPopup}
@@ -235,6 +196,7 @@ const PrimeNet = () => {
       availableSubtitles={availableSubtitles}
       selectedSubtitle={selectedSubtitle}
       onSelectSubtitle={selectSubtitle}
+      subtitleCues={subtitleCues}
     />
   );
 };
