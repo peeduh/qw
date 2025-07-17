@@ -38,6 +38,12 @@ const PlayerTemplate = ({
   isFullscreen,
   isPictureInPicture,
   
+  // Volume slider state
+  showVolumeSlider,
+  isVolumeDragging,
+  isVolumeHovered,
+  volumeSliderRef,
+  
   // Subtitle state
   showCaptionsPopup,
   setShowCaptionsPopup,
@@ -70,7 +76,16 @@ const PlayerTemplate = ({
   onSelectSubtitle,
   onVideoError,
   onSpeedChange,
-  onQualityChange
+  onQualityChange,
+  
+  // Volume slider handlers
+  onVolumeMouseEnter,
+  onVolumeMouseLeave,
+  onVolumeSliderMouseEnter,
+  onVolumeSliderMouseLeave,
+  onVolumeSliderMouseDown,
+  onVolumeSliderHoverEnter,
+  onVolumeSliderHoverLeave
 }) => {
   const getVolumeIcon = () => {
     if (isMuted || volume === 0) { return <SoundOffSolid width="24" height="24" />; }
@@ -92,22 +107,15 @@ const PlayerTemplate = ({
         </div>
       )}
       
-      <div className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent pt-10 px-5 pb-5 transition-opacity duration-300 ease-in-out ${showControls ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={(e) => e.stopPropagation()}>
-        <div ref={progressBarRef} className="relative w-full h-1 bg-white/30 rounded-sm mb-4 cursor-pointer group" onMouseDown={onProgressMouseDown} onMouseEnter={onProgressMouseEnter} onMouseLeave={onProgressMouseLeave}>
-          <div 
-            className="absolute top-0 left-0 h-full bg-white/50 rounded-sm transition-all duration-200"
-            style={{ width: `${bufferedAmount}%` }}
-          />
+      <div className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent pt-10 px-5 pb-2 transition-opacity duration-300 ease-in-out ${showControls ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={(e) => e.stopPropagation()}>
+        <div ref={progressBarRef} className="relative w-full py-3 cursor-pointer group" onMouseDown={onProgressMouseDown} onMouseEnter={onProgressMouseEnter} onMouseLeave={onProgressMouseLeave}>
+          <div className="absolute inset-0 -my-2" />
           
-          <div 
-            className="absolute top-0 left-0 h-full bg-blue-500 rounded-sm"
-            style={{ width: `${duration ? (currentTime / duration) * 100 : 0}%` }}
-          />
-          
-          <div 
-            className={`absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-blue-500 rounded-full shadow-lg transition-all ${isProgressHovered || isDragging ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`}
-            style={{ left: `calc(${duration ? (currentTime / duration) * 100 : 0}% - 8px)` }}
-          />
+          <div className="relative w-full h-1 bg-white/30 rounded-sm">
+            <div className="absolute top-0 left-0 h-full bg-white/50 rounded-sm transition-all duration-200" style={{ width: `${bufferedAmount}%` }}/>
+            <div className="absolute top-0 left-0 h-full bg-white rounded-sm" style={{ width: `${duration ? (currentTime / duration) * 100 : 0}%` }}/>   
+            <div className={`absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-lg transition-all ${isProgressHovered || isDragging ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`} style={{ left: `calc(${duration ? (currentTime / duration) * 100 : 0}% - 8px)` }}/>
+          </div>
         </div>
 
         <div className="flex items-center justify-between text-white">
@@ -125,9 +133,21 @@ const PlayerTemplate = ({
               <img src="/icons/forwards10.svg" alt="Forward 10 seconds" className="w-6 h-6 select-none"/>
             </ControlButton>
 
-            <div className="flex items-center gap-2">
-              <ControlButton onClick={onToggleMute}>{getVolumeIcon()}</ControlButton>
-              <input type="range" min="0" max="1" step="0.1" value={isMuted ? 0 : volume} onChange={onVolumeChange} className="w-20 h-1 bg-white/30 outline-none rounded-sm"/>
+            <div className="flex items-center gap-2 relative">
+              <ControlButton onClick={onToggleMute} onMouseEnter={onVolumeMouseEnter} onMouseLeave={onVolumeMouseLeave}>
+                {getVolumeIcon()}
+              </ControlButton>
+              
+              <div className={`volume-slider-transition ${showVolumeSlider ? 'volume-slider-visible' : 'volume-slider-hidden'}`} onMouseEnter={onVolumeSliderMouseEnter} onMouseLeave={onVolumeSliderMouseLeave}>
+                <div ref={volumeSliderRef} className="relative w-full py-3 my-4 cursor-pointer group" onMouseDown={onVolumeSliderMouseDown} onMouseEnter={onVolumeSliderHoverEnter} onMouseLeave={onVolumeSliderHoverLeave}>
+                  <div className="absolute inset-0 -my-2" />
+                  
+                  <div className="relative w-full h-1 bg-white/30 rounded-sm">
+                    <div className="absolute top-0 left-0 h-full bg-white rounded-sm" style={{ width: `${isMuted ? 0 : volume * 100}%` }}/> 
+                    <div className={`absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow-lg ${isVolumeHovered || isVolumeDragging ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`} style={{ left: `calc(${isMuted ? 0 : volume * 100}% - 6px)` }}/>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <span className="text-sm text-white min-w-[140px] select-none">{formatTime(currentTime)} / {formatTime(duration)}</span>

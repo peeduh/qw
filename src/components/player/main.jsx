@@ -17,6 +17,11 @@ const VideoPlayer = ({ videoUrl, onError, showCaptionsPopup, setShowCaptionsPopu
   const [bufferedAmount, setBufferedAmount] = useState(0);
   const [isProgressHovered, setIsProgressHovered] = useState(false);
   
+  // Volume slider state
+  const [showVolumeSlider, setShowVolumeSlider] = useState(false);
+  const [isVolumeDragging, setIsVolumeDragging] = useState(false);
+  const [isVolumeHovered, setIsVolumeHovered] = useState(false);
+  
   // Subtitle state
   const [currentSubtitleText, setCurrentSubtitleText] = useState('');
   
@@ -38,6 +43,8 @@ const VideoPlayer = ({ videoUrl, onError, showCaptionsPopup, setShowCaptionsPopu
   const controlsTimeoutRef = useRef(null);
   const progressBarRef = useRef(null);
   const progressSaveTimeoutRef = useRef(null);
+  const volumeTimeoutRef = useRef(null);
+  const volumeSliderRef = useRef(null);
 
   useEffect(() => {
     if (mediaId && mediaType) {
@@ -198,6 +205,70 @@ const VideoPlayer = ({ videoUrl, onError, showCaptionsPopup, setShowCaptionsPopu
     }
   }, [isDragging, duration]);
 
+  // Handle volume slider dragging
+  useEffect(() => {
+    if (isVolumeDragging) {
+      const handleGlobalMouseMove = (e) => {
+        if (isVolumeDragging) { handleVolumeSliderSeek(e) };
+      };
+      const handleGlobalMouseUp = () => setIsVolumeDragging(false);
+
+      document.addEventListener('mousemove', handleGlobalMouseMove);
+      document.addEventListener('mouseup', handleGlobalMouseUp);
+
+      return () => {
+        document.removeEventListener('mousemove', handleGlobalMouseMove);
+        document.removeEventListener('mouseup', handleGlobalMouseUp);
+      };
+    }
+  }, [isVolumeDragging]);
+
+  // Volume slider timeout management
+  const showVolumeSliderTemporarily = () => {
+    setShowVolumeSlider(true);
+    
+    if (volumeTimeoutRef.current) {
+      clearTimeout(volumeTimeoutRef.current);
+    }
+    
+    volumeTimeoutRef.current = setTimeout(() => {
+      setShowVolumeSlider(false);
+    }, 5000);
+  };
+
+  const handleVolumeMouseEnter = () => {
+    showVolumeSliderTemporarily();
+  };
+
+  const handleVolumeMouseLeave = () => {
+    if (volumeTimeoutRef.current) {
+      clearTimeout(volumeTimeoutRef.current);
+    }
+    
+    volumeTimeoutRef.current = setTimeout(() => {
+      setShowVolumeSlider(false);
+    }, 300);
+  };
+
+  const handleVolumeSliderMouseEnter = () => {
+    if (volumeTimeoutRef.current) {
+      clearTimeout(volumeTimeoutRef.current);
+    }
+    setShowVolumeSlider(true);
+    setIsVolumeHovered(true);
+  };
+
+  const handleVolumeSliderMouseLeave = () => {
+    if (volumeTimeoutRef.current) {
+      clearTimeout(volumeTimeoutRef.current);
+    }
+    
+    volumeTimeoutRef.current = setTimeout(() => {
+      setShowVolumeSlider(false);
+    }, 300);
+    setIsVolumeHovered(false);
+  };
+
   // Event handlers
   const handleMouseMove = () => {
     showControlsTemporarily(setShowControls, controlsTimeoutRef, isPlaying);
@@ -231,6 +302,21 @@ const VideoPlayer = ({ videoUrl, onError, showCaptionsPopup, setShowCaptionsPopu
 
   const handleVolumeChangeEvent = (e) => {
     handleVolumeChange(e, videoRef);
+  };
+
+  const handleVolumeSliderMouseDown = (e) => {
+    setIsVolumeDragging(true);
+    handleVolumeSliderSeek(e);
+    e.preventDefault();
+  };
+
+  const handleVolumeSliderSeek = (e) => {
+    if (volumeSliderRef.current && videoRef.current) {
+      const rect = volumeSliderRef.current.getBoundingClientRect();
+      const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      videoRef.current.volume = pos;
+      videoRef.current.muted = pos === 0;
+    }
   };
 
   const handleToggleFullscreen = () => {
@@ -281,6 +367,12 @@ const VideoPlayer = ({ videoUrl, onError, showCaptionsPopup, setShowCaptionsPopu
       isFullscreen={isFullscreen}
       isPictureInPicture={isPictureInPicture}
       
+      // Volume slider state
+      showVolumeSlider={showVolumeSlider}
+      isVolumeDragging={isVolumeDragging}
+      isVolumeHovered={isVolumeHovered}
+      volumeSliderRef={volumeSliderRef}
+      
       // Subtitle state
       showCaptionsPopup={showCaptionsPopup}
       setShowCaptionsPopup={setShowCaptionsPopup}
@@ -314,6 +406,15 @@ const VideoPlayer = ({ videoUrl, onError, showCaptionsPopup, setShowCaptionsPopu
       onVideoError={handleVideoError}
       onSpeedChange={handleSpeedChange}
       onQualityChange={handleQualityChange}
+      
+      // Volume slider handlers
+      onVolumeMouseEnter={handleVolumeMouseEnter}
+      onVolumeMouseLeave={handleVolumeMouseLeave}
+      onVolumeSliderMouseEnter={handleVolumeSliderMouseEnter}
+      onVolumeSliderMouseLeave={handleVolumeSliderMouseLeave}
+      onVolumeSliderMouseDown={handleVolumeSliderMouseDown}
+      onVolumeSliderHoverEnter={handleVolumeSliderMouseEnter}
+      onVolumeSliderHoverLeave={handleVolumeSliderMouseLeave}
     />
   );
 };
