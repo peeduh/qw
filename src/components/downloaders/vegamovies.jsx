@@ -1,6 +1,12 @@
 import { fetchTmdb } from '../../utils.jsx';
 import config from '../../config.json';
 
+const domains = ["vegamovies.cd", "vegamovies.ss"];
+
+const getRandomDomain = () => {
+  return domains[Math.floor(Math.random() * domains.length)];
+};
+
 const extractQualityTags = (title) => {
   const qualityTags = ['PREHD', 'PRE-HD', 'WEB-DL', 'HDTS', 'HDR', 'BDRip', 'Dual Audio', 'BluRay'];
   const foundTags = [];
@@ -35,11 +41,12 @@ const extractQualityTags = (title) => {
 
 const searchVegamovies = async (searchQuery, proxyUrl) => {
   try {
+    const selectedDomain = getRandomDomain();
     const response = await fetch(proxyUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        url: 'https://vegamovies.cd',
+        url: `https://${selectedDomain}`,
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -62,11 +69,17 @@ const searchVegamovies = async (searchQuery, proxyUrl) => {
 
 const getVegamoviesPage = async (href, proxyUrl) => {
   try {
+    let fullUrl = href;
+    if (href.startsWith('/')) {
+      const selectedDomain = getRandomDomain();
+      fullUrl = `https://${selectedDomain}${href}`;
+    }
+    
     const response = await fetch(proxyUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        url: href,
+        url: fullUrl,
         method: 'GET',
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
