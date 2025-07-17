@@ -12,7 +12,7 @@ import {
 } from "../../components/ui/dropdown-menu";
 
 const Watch = ({ isOpen, onClose, onUpdateUrl, mediaType, tmdbId, season = 1, episode = 1, title, episodes = [], seasons = [], selectedSeason = null }) => {
-  const [currentSource, setCurrentSource] = useState('VidLink');
+  const [currentSource, setCurrentSource] = useState('Native');
   const [currentEpisode, setCurrentEpisode] = useState(episode);
   const [currentSeason, setCurrentSeason] = useState(season);
   const [currentSeasonDetails, setCurrentSeasonDetails] = useState(null);
@@ -32,6 +32,7 @@ const Watch = ({ isOpen, onClose, onUpdateUrl, mediaType, tmdbId, season = 1, ep
   const cleanupRef = useRef(null);
   
   const sources = [
+    'Native',
     'VidLink', 
     'VidsrcXYZ',
     'VidFast',

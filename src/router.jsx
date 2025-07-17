@@ -8,6 +8,7 @@ import Details from './pages/details/Details.jsx';
 import Watchlist from './pages/Watchlist.jsx';
 import Search from './pages/Search.jsx';
 import Ios from './pages/misc/Ios.jsx';
+import PrimeNet from './pages/embeds/primenet.jsx';
 
 export default function App() {
   return (
@@ -22,6 +23,8 @@ export default function App() {
         <Route path="/watchlist" element={<Watchlist />} />
         <Route path="/search" element={<Search />} />
         <Route path="/ios" element={<Ios />} />
+        <Route path="/e/primenet/:tmdbid" element={<PrimeNet />} />
+        <Route path="/e/primenet/:tmdbid/:season/:episode" element={<PrimeNet />} />
       </Routes>
       <Toaster 
         position="bottom-center"

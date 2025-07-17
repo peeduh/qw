@@ -101,6 +101,47 @@
   }
 }
 
+/* Modal Animation Keyframes */
+@keyframes modal-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.85) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes modal-scale-out {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.5) translateY(10px);
+  }
+}
+
+@keyframes modal-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modal-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
 /* Base Skeleton Classes */
 .skeleton-base {
   background-color: #404040;
@@ -188,6 +229,23 @@
 
 .animate-stagger {
   animation: slide-up 0.6s ease-out both;
+}
+
+/* Modal Animation Classes */
+.animate-modal-scale-in {
+  animation: modal-scale-in 0.1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-modal-scale-out {
+  animation: modal-scale-out 0.2s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+.animate-modal-fade-in {
+  animation: modal-fade-in 0.1s ease-out forwards;
+}
+
+.animate-modal-fade-out {
+  animation: modal-fade-out 0.2s ease-in forwards;
 }
 
 /* Skeleton Size Variants */
@@ -303,4 +361,29 @@
 .animate-slide-in-left,
 .animate-stagger {
   will-change: transform, opacity;
+}
+
+/* Modal transition states */
+.modal-enter {
+  opacity: 0;
+  transform: scale(0.85) translateY(10px);
+}
+
+.modal-enter-active {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+  transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1), 
+              transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modal-exit {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+
+.modal-exit-active {
+  opacity: 0;
+  transform: scale(0.5) translateY(10px);
+  transition: opacity 0.2s cubic-bezier(0.4, 0, 1, 1), 
+              transform 0.2s cubic-bezier(0.4, 0, 1, 1);
 }

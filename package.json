@@ -18,6 +18,8 @@
     "@tailwindcss/vite": "^4.1.8",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "hls.js": "^1.6.7",
+    "iconoir-react": "^7.11.0",
     "lucide-react": "^0.514.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
@@ -25,7 +27,7 @@
     "sonner": "^2.0.5",
     "tailwind-merge": "^3.3.1",
     "tailwindcss": "^4.1.8",
-    "tailwindcss-animate": "^1.0.7"
+    "wyzie-lib": "^2.2.5"
   },
   "devDependencies": {
     "@eslint/js": "^9.25.0",

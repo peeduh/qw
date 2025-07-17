@@ -1,5 +1,10 @@
 export function getSource(source, type, id, season=0, episode=0) {
   switch(source) {
+    case 'Native':
+      return type === 'movie'
+        ? `/e/primenet/${id}`
+        : `/e/primenet/${id}/${season}/${episode}`;
+    
     case 'VidLink':
       return type === 'movie'
         ? `https://vidlink.pro/movie/${id}?primaryColor=FFFFFF&secondaryColor=2392EE&title=true&poster=false&autoplay=false`
