@@ -158,7 +158,7 @@ export const fetchTorrentGalaxyTorrents = async (imdbId) => {
 export const fetchShowboxDownload = async (tmdbId, mediaType, title) => {
   try {
     const downloadLink = await getShowboxDownloadLink(tmdbId, mediaType);
-    if (downloadLink) { return { url: downloadLink, title: title, source: 'Showbox', type: 'stream', tags: ['Account requried'] }; }
+    if (downloadLink) { return { url: downloadLink, title: title, source: 'Showbox', type: 'stream', tags: ['Multiple qualities', 'Account requried'] }; }
     
     return null;
   } catch (error) {

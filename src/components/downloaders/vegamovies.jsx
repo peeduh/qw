@@ -112,16 +112,36 @@ export const getVegamoviesDownloads = async (tmdbId) => {
       return [];
     }
     
-    const firstPostItem = postItems[0];
-    const aTag = firstPostItem.querySelector('a');
+    let selectedPostItem = null;
+    
+    for (const postItem of postItems) {
+      const aTag = postItem.querySelector('a[title]');
+      if (aTag) {
+        const title = aTag.getAttribute('title').toLowerCase();
+        const movieTitleLower = tmdbData.title.toLowerCase();
+        
+        if (title.includes(movieTitleLower) && title.includes(releaseYear)) {
+          selectedPostItem = postItem;
+          console.log('Found better match based on title and year:', title);
+          break;
+        }
+      }
+    }
+    
+    if (!selectedPostItem) {
+      selectedPostItem = postItems[0];
+      console.log('Using first search result as fallback');
+    }
+    
+    const aTag = selectedPostItem.querySelector('a');
     if (!aTag) {
-      console.warn('No link found in first Vegamovies search result');
+      console.warn('No link found in selected Vegamovies search result');
       return [];
     }
     
     const href = aTag.getAttribute('href');
     if (!href) {
-      console.warn('No href found in first Vegamovies search result');
+      console.warn('No href found in selected Vegamovies search result');
       return [];
     }
     
