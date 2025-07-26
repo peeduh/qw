@@ -9,6 +9,9 @@ import Watchlist from './pages/Watchlist.jsx';
 import Search from './pages/Search.jsx';
 import Ios from './pages/misc/Ios.jsx';
 import PrimeNet from './pages/embeds/primenet.jsx';
+import AnimeHome from './pages/anime/home.jsx';
+import AnimeDetails from './pages/anime/details.jsx';
+import AnimeSearch from './pages/anime/search.jsx';
 
 export default function App() {
   return (
@@ -20,6 +23,9 @@ export default function App() {
         <Route path="/tv" element={<Tv />} />
         <Route path="/movie/:tmdbId" element={<Details />} />
         <Route path="/tv/:tmdbId" element={<Details />} />
+        <Route path="/anime" element={<AnimeHome />} />
+        <Route path="/anime/search" element={<AnimeSearch />} />
+        <Route path="/anime/:id" element={<AnimeDetails />} />
         <Route path="/watchlist" element={<Watchlist />} />
         <Route path="/search" element={<Search />} />
         <Route path="/ios" element={<Ios />} />

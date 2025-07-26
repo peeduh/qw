@@ -69,7 +69,7 @@ const Header = () => {
           >
             TV Shows
           </Link>
-          <Link onClick={() => toast('Anime mode is currently being rewritten to bring you a fast and seamless experience while using quickwatch. It will be back early-mid July.')} className={`px-4 py-2 rounded-lg transition-all duration-200 hover:bg-white hover:text-zinc-900 hover:shadow-[0_0_30px_#e7eaee50 flex flex-col relative line-through ${
+          <Link to="/anime" className={`px-4 py-2 rounded-lg transition-all duration-200 hover:bg-white hover:text-zinc-900 hover:shadow-[0_0_30px_#e7eaee50 flex flex-col relative ${
               isActive('/anime') ? 'bg-white/20 text-white' : 'text-gray-200'
             }`}
           >
