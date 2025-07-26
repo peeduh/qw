@@ -7,6 +7,7 @@ const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileHeaderOpacity, setMobileHeaderOpacity] = useState(1);
   const [lastScrollY, setLastScrollY] = useState(0);
+  const [animeWarningShown, setAnimeWarningShown] = useState(false);
   const location = useLocation();
   const currentPath = location.pathname;
 
@@ -31,6 +32,14 @@ const Header = () => {
       return currentPath === '/' || currentPath === '/index.html' || currentPath === '/home';
     }
     return currentPath === path;
+  };
+
+  const handleAnimeClick = (e) => {
+    if (!animeWarningShown) {
+      e.preventDefault();
+      toast.warning('The anime section is currently in beta. Things might break. Click again if you still want to enter');
+      setAnimeWarningShown(true);
+    }
   };
 
   // check if iOS and not PWA
@@ -69,7 +78,7 @@ const Header = () => {
           >
             TV Shows
           </Link>
-          <Link to="/anime" className={`px-4 py-2 rounded-lg transition-all duration-200 hover:bg-white hover:text-zinc-900 hover:shadow-[0_0_30px_#e7eaee50 flex flex-col relative ${
+          <Link to="/anime" onClick={handleAnimeClick} className={`px-4 py-2 rounded-lg transition-all duration-200 hover:bg-white hover:text-zinc-900 hover:shadow-[0_0_30px_#e7eaee50 flex flex-col relative ${
               isActive('/anime') ? 'bg-white/20 text-white' : 'text-gray-200'
             }`}
           >

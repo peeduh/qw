@@ -98,19 +98,16 @@ export default function AnimeHeader() {
     <header className="h-16 fixed top-0 left-0 bg-anime-modal-bg border-b border-anime-border/10 transition-all duration-200 z-50 py-3 px-4 text-white items-center text-md flex-row justify-between hidden md:flex w-full">
       
       <div className="flex items-center">
-        <Link 
-          to="/anime" 
-          className="text-2xl hover:text-accent transition duration-200 active:scale-90" 
-          style={{ fontFamily: 'Instrument Serif' }}
-        >
-          quickwatch anime
-        </Link>
+        <div className="text-2xl" style={{ fontFamily: 'Instrument Serif' }}>
+          <Link to="/" className="hover:text-blue-400 transition duration-200 active:scale-90">quickwatch</Link>
+          <Link to="/anime" className="hover:text-pink-400 transition duration-200 active:scale-90">{" "}anime</Link>
+        </div>
       </div>
 
       <div className="flex-1 flex justify-center items-center pl-6 pr-2">
         <div className="relative w-full group">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="w-4 h-4 text-gray-400 group-focus-within:text-accent" />
+            <Search className="w-4 h-4 text-gray-400 group-focus-within:text-blue-400" />
           </div>
           <input
             ref={searchInputRef}
@@ -120,7 +117,7 @@ export default function AnimeHeader() {
             onChange={handleInputChange}
             onKeyPress={handleKeyPress}
             onFocus={() => searchQuery.trim() && setShowDropdown(true)}
-            className="block w-full bg-anime-card-bg border border-anime-border/10 rounded-md py-2 pl-10 pr-3 text-sm placeholder-anime-border/20 text-white focus:outline-none focus:border-accent focus:placeholder-accent/40 transition duration-200 ease-in-out"
+            className="block w-full bg-anime-card-bg border border-anime-border/10 rounded-md py-2 pl-10 pr-3 text-sm placeholder-anime-border/20 text-white focus:outline-none focus:border-blue-400 focus:placeholder-blue-400/40 transition duration-200 ease-in-out"
           />
           
           {showDropdown && (
@@ -183,7 +180,7 @@ export default function AnimeHeader() {
         <button 
           aria-label="Watchlist" 
           onClick={() => alert('not coded yet. coming soon')}
-          className="p-2 w-10 h-10 bg-anime-card-bg border border-anime-border/10 rounded-md hover:bg-[#1f1f1f] cursor-pointer active:scale-90 focus:outline-none focus:border-accent focus:text-accent flex justify-center items-center"
+          className="p-2 w-10 h-10 bg-anime-card-bg border border-anime-border/10 rounded-md hover:bg-[#1f1f1f] cursor-pointer active:scale-90 focus:outline-none focus:border-blue-400 focus:text-blue-400 flex justify-center items-center"
         >
           <Bookmark className="w-5 h-5" />
         </button>
