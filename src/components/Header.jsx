@@ -78,11 +78,14 @@ const Header = () => {
           >
             TV Shows
           </Link>
-          <Link to="/anime" onClick={handleAnimeClick} className={`px-4 py-2 rounded-lg transition-all duration-200 hover:bg-white hover:text-zinc-900 hover:shadow-[0_0_30px_#e7eaee50 flex flex-col relative ${
+          <Link to="/anime" onClick={handleAnimeClick} className={`px-4 py-2 rounded-lg transition-all duration-200 hover:bg-white hover:text-zinc-900 hover:shadow-[0_0_30px_#e7eaee50] flex flex-col relative ${
               isActive('/anime') ? 'bg-white/20 text-white' : 'text-gray-200'
             }`}
           >
-            Anime
+            <span className="relative">
+              Anime
+              <span className="absolute -top-2.5 -right-5 bg-blue-500 text-[8px] px-1 pt-[0.05rem] rounded-[0.2rem] rotate-6 text-white font-medium">BETA</span>
+            </span>
           </Link>
         </div>
         

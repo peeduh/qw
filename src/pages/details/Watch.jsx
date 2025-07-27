@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { X, Tv, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getSource } from './Sources.jsx';
 import { initializeSourceTracking } from '../../components/progress/index.jsx';
-import { fetchTmdb } from '../../utils.jsx';
+import { fetchTmdb, isMobileDevice } from '../../utils.jsx';
 import MobileOrientationPrompt from './MobileOrientationPrompt.jsx';
 import {
   DropdownMenu,
@@ -53,9 +53,7 @@ const Watch = ({ isOpen, onClose, onUpdateUrl, mediaType, tmdbId, season = 1, ep
   const currentUrl = getSource(currentSource, mediaType, id, currentSeason, currentEpisode);
 
   useEffect(() => {
-    const checkMobileAndOrientation = () => {
-      const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || window.innerWidth < 768;
-      
+    const checkMobileAndOrientation = () => {      
       const landscape = window.innerWidth > window.innerHeight;
       setIsMobile(isMobileDevice);
       setIsLandscape(landscape);

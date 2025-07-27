@@ -14,7 +14,17 @@ const transformFlagUrl = (flagUrl) => {
   return flagUrl;
 };
 
-const SubtitleManager = ({ showCaptionsPopup, setShowCaptionsPopup, subtitlesEnabled, subtitleError, subtitlesLoading, availableSubtitles, selectedSubtitle, selectSubtitle }) => {
+const SubtitleManager = ({ 
+  showCaptionsPopup, 
+  setShowCaptionsPopup, 
+  subtitlesEnabled, 
+  subtitleError, 
+  subtitlesLoading, 
+  availableSubtitles, 
+  selectedSubtitle, 
+  selectSubtitle,
+  container 
+}) => {
   const handleKeyDown = (e) => {
     if (e.key === ' ' || e.key === 'Spacebar') {
       e.preventDefault();
@@ -47,6 +57,7 @@ const SubtitleManager = ({ showCaptionsPopup, setShowCaptionsPopup, subtitlesEna
               : 'animate-modal-scale-out opacity-0 scale-85'
           }`}
           sideOffset={8}
+          container={container}
           style={{
             transformOrigin: 'bottom right',
             willChange: 'transform, opacity'

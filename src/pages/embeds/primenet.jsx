@@ -161,14 +161,6 @@ const PrimeNet = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="fixed top-0 left-0 w-screen h-screen bg-black flex items-center justify-center text-white text-lg">
-        Loading video...
-      </div>
-    );
-  }
-
   if (error) {
     return (
       <div className="fixed top-0 left-0 w-screen h-screen bg-black flex items-center justify-center text-red-500 text-lg text-center p-5">

@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import PlayerTemplate from './template';
 import { initializeHLS, setupVideoEventListeners, handleSeek, skipTime, togglePlay, toggleMute, handleVolumeChange, toggleFullscreen, togglePictureInPicture, showControlsTemporarily, parseTimeToSeconds, changePlaybackSpeed, changeQuality } from './helpers';
 import { saveProgress, getProgress } from '../progress';
+import { isMobileDevice } from '../../utils';
 
 const VideoPlayer = ({ videoUrl, onError, showCaptionsPopup, setShowCaptionsPopup, subtitlesEnabled, subtitleError, subtitlesLoading, availableSubtitles, selectedSubtitle, onSelectSubtitle, subtitleCues, mediaId, mediaType, season = 0, episode = 0, sourceIndex = 0 }) => {
   // Video state
@@ -16,6 +17,7 @@ const VideoPlayer = ({ videoUrl, onError, showCaptionsPopup, setShowCaptionsPopu
   const [isDragging, setIsDragging] = useState(false);
   const [bufferedAmount, setBufferedAmount] = useState(0);
   const [isProgressHovered, setIsProgressHovered] = useState(false);
+  const [isVideoLoading, setIsVideoLoading] = useState(true);
   
   // Volume slider state
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
@@ -164,10 +166,13 @@ const VideoPlayer = ({ videoUrl, onError, showCaptionsPopup, setShowCaptionsPopu
   // Initialize HLS when videoUrl changes
   useEffect(() => {
     if (videoUrl) {
+      setIsVideoLoading(true);
       setQualitiesLoading(true);
       initializeHLS(videoUrl, videoRef, hlsRef, onError, setAvailableQualities);
       setQualitiesLoading(false);
       setProgressLoaded(false);
+    } else {
+      setIsVideoLoading(true);
     }
 
     return () => {
@@ -179,7 +184,26 @@ const VideoPlayer = ({ videoUrl, onError, showCaptionsPopup, setShowCaptionsPopu
   }, [videoUrl, onError]);
 
   useEffect(() => {
-    return setupVideoEventListeners(videoRef, setCurrentTime, setDuration, setIsPlaying, setVolume, setIsMuted, setIsPictureInPicture, setBufferedAmount);
+    const cleanup = setupVideoEventListeners(videoRef, setCurrentTime, setDuration, setIsPlaying, setVolume, setIsMuted, setIsPictureInPicture, setBufferedAmount);
+    
+    const handleCanPlay = () => { setIsVideoLoading(false); };
+    const handleWaiting = () => { setIsVideoLoading(true); };
+    const handleLoadStart = () => { setIsVideoLoading(true); };
+
+    if (videoRef.current) {
+      videoRef.current.addEventListener('canplay', handleCanPlay);
+      videoRef.current.addEventListener('waiting', handleWaiting);
+      videoRef.current.addEventListener('loadstart', handleLoadStart);
+    }
+
+    return () => {
+      cleanup();
+      if (videoRef.current) {
+        videoRef.current.removeEventListener('canplay', handleCanPlay);
+        videoRef.current.removeEventListener('waiting', handleWaiting);
+        videoRef.current.removeEventListener('loadstart', handleLoadStart);
+      }
+    };
   }, [videoUrl]);
 
   useEffect(() => {
@@ -189,6 +213,12 @@ const VideoPlayer = ({ videoUrl, onError, showCaptionsPopup, setShowCaptionsPopu
   }, [availableQualities, selectedQuality]);
 
   useEffect(() => {
+    // Only show custom subtitles on non-mobile devices
+    if (isMobileDevice()) {
+      setCurrentSubtitleText('');
+      return;
+    }
+
     if (!subtitlesEnabled || !selectedSubtitle || !subtitleCues || subtitleCues.length === 0) {
       setCurrentSubtitleText('');
       return;
@@ -202,6 +232,105 @@ const VideoPlayer = ({ videoUrl, onError, showCaptionsPopup, setShowCaptionsPopu
 
     setCurrentSubtitleText(currentCue ? currentCue.text : '');
   }, [currentTime, subtitlesEnabled, selectedSubtitle, subtitleCues]);
+
+  useEffect(() => {
+    if (!videoRef.current) return;
+
+    // Only load native tracks on mobile devices
+    if (!isMobileDevice()) { return; }
+
+    const video = videoRef.current;
+    
+    // Remove existing subtitle tracks
+    const existingTracks = video.querySelectorAll('track[kind="subtitles"]');
+    existingTracks.forEach(track => track.remove());
+
+    // Add new subtitle track if one is selected
+    if (selectedSubtitle && selectedSubtitle.url) {
+      const track = document.createElement('track');
+      track.kind = 'subtitles';
+      track.label = selectedSubtitle.display || selectedSubtitle.language || 'Subtitles';
+      track.srclang = selectedSubtitle.language || 'en';
+      track.default = true;
+      
+      if (selectedSubtitle.url.includes('.srt') || selectedSubtitle.format === 'srt') {
+        convertSRTToVTTBlob(selectedSubtitle.url).then(vttBlob => {
+          if (vttBlob) {
+            track.src = URL.createObjectURL(vttBlob);
+            video.appendChild(track);
+            
+            track.addEventListener('load', () => {
+              if (track.track) {
+                track.track.mode = subtitlesEnabled ? 'showing' : 'hidden';
+              }
+            });
+          }
+        }).catch(err => {
+          console.error('Failed to convert SRT to VTT:', err);
+        });
+      } else {
+        track.src = selectedSubtitle.url;
+        video.appendChild(track);
+        
+        // Enable the track
+        track.addEventListener('load', () => {
+          if (track.track) {
+            track.track.mode = subtitlesEnabled ? 'showing' : 'hidden';
+          }
+        });
+      }
+    }
+
+    const tracks = video.textTracks;
+    for (let i = 0; i < tracks.length; i++) {
+      if (tracks[i].kind === 'subtitles') {
+        tracks[i].mode = subtitlesEnabled ? 'showing' : 'hidden';
+      }
+    }
+  }, [selectedSubtitle, subtitlesEnabled]);
+
+  // Helper function to convert SRT to VTT
+  const convertSRTToVTTBlob = async (srtUrl) => {
+    try {
+      const response = await fetch(srtUrl, {
+        mode: 'cors',
+        headers: {'Accept': 'text/plain, text/vtt, application/x-subrip'}
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch SRT: ${response.status}`);
+      }
+      
+      const srtText = await response.text();
+      const vttText = convertSRTToVTT(srtText);
+      
+      return new Blob([vttText], { type: 'text/vtt' });
+    } catch (err) {
+      console.error('Error converting SRT to VTT:', err);
+      return null;
+    }
+  };
+
+  // Helper function to convert SRT format to VTT format
+  const convertSRTToVTT = (srtText) => {
+    let vttText = 'WEBVTT\n\n';
+    
+    const blocks = srtText.trim().split(/\n\s*\n/);
+    
+    blocks.forEach(block => {
+      const lines = block.trim().split('\n');
+      if (lines.length >= 3) {
+        const timeString = lines[1];
+        const text = lines.slice(2).join('\n');
+        
+        const vttTimeString = timeString.replace(/,/g, '.');
+        
+        vttText += `${vttTimeString}\n${text}\n\n`;
+      }
+    });
+    
+    return vttText;
+  };
 
   // Handle progress bar dragging
   useEffect(() => {
@@ -481,6 +610,7 @@ const VideoPlayer = ({ videoUrl, onError, showCaptionsPopup, setShowCaptionsPopu
       showControls={showControls}
       isFullscreen={isFullscreen}
       isPictureInPicture={isPictureInPicture}
+      isVideoLoading={isVideoLoading}
       
       // Volume slider state
       showVolumeSlider={showVolumeSlider}
