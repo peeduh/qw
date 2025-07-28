@@ -2,7 +2,7 @@ import { fetchTmdb } from '../../utils.jsx';
 import config from '../../config.json';
 import Fuse from 'fuse.js';
 
-const domain = "vegamovies.bh";
+const domain = "vegamovies.bh"; // make it somehow automatically find the latest domain instead of manually updating it.
 
 const findBestFuzzyMatch = (targetTitle, targetYear, candidates) => {
   const fuseOptions = {
