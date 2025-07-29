@@ -10,69 +10,84 @@ export const formatTime = (time) => {
   }
 };
 
-export const initializeHLS = async (videoUrl, videoRef, hlsRef, setError, setAvailableQualities) => {
+export const initializeVideo = async (videoUrl, videoRef, hlsRef, setError, setAvailableQualities) => {
   if (!videoUrl || !videoRef.current) return;
 
   try {
-    const Hls = (await import('hls.js')).default;
-    
-    if (Hls.isSupported()) {
-      if (hlsRef.current) { hlsRef.current.destroy(); }
-
-      const hls = new Hls({ enableWorker: true, lowLatencyMode: false, backBufferLength: 90 });
-      hlsRef.current = hls;
-
-      hls.on(Hls.Events.ERROR, (event, data) => {
-        console.error('HLS Error:', data);
-        if (data.fatal) {
-          switch (data.type) {
-            case Hls.ErrorTypes.NETWORK_ERROR:
-              hls.startLoad();
-              break;
-            case Hls.ErrorTypes.MEDIA_ERROR:
-              hls.recoverMediaError();
-              break;
-            default:
-              setError('Fatal error occurred during video playback');
-              hls.destroy();
-              break;
-          }
-        }
-      });
-
-      // Extract quality levels
-      hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
-        if (setAvailableQualities && data.levels) {
-          const qualities = data.levels.map((level, index) => ({
-            index,
-            height: level.height,
-            width: level.width,
-            bitrate: level.bitrate,
-            quality: level.height ? `${level.height}p` : 'Unknown',
-            url: level.url
-          }));
-          
-          qualities.sort((a, b) => b.height - a.height);
-          
-          setAvailableQualities(qualities);
-        }
-      });
-
-      hls.loadSource(videoUrl);
-      hls.attachMedia(videoRef.current);
+    if (videoUrl.includes('.m3u8') || videoUrl.includes('m3u8')) {
+      // Use HLS.js for m3u8 streams
+      const Hls = (await import('hls.js')).default;
       
-    } else if (videoRef.current.canPlayType('application/vnd.apple.mpegurl')) {
-      // Native HLS support (Safari)
+      if (Hls.isSupported()) {
+        if (hlsRef.current) { hlsRef.current.destroy(); }
+
+        const hls = new Hls({ enableWorker: true, lowLatencyMode: false, backBufferLength: 90 });
+        hlsRef.current = hls;
+
+        hls.on(Hls.Events.ERROR, (event, data) => {
+          console.error('HLS Error:', data);
+          if (data.fatal) {
+            switch (data.type) {
+              case Hls.ErrorTypes.NETWORK_ERROR:
+                hls.startLoad();
+                break;
+              case Hls.ErrorTypes.MEDIA_ERROR:
+                hls.recoverMediaError();
+                break;
+              default:
+                setError('Fatal error occurred during video playback');
+                hls.destroy();
+                break;
+            }
+          }
+        });
+
+        // Extract quality levels
+        hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
+          if (setAvailableQualities && data.levels) {
+            const qualities = data.levels.map((level, index) => ({
+              index,
+              height: level.height,
+              width: level.width,
+              bitrate: level.bitrate,
+              quality: level.height ? `${level.height}p` : 'Unknown',
+              url: level.url
+            }));
+            
+            qualities.sort((a, b) => b.height - a.height);
+            
+            setAvailableQualities(qualities);
+          }
+        });
+
+        hls.loadSource(videoUrl);
+        hls.attachMedia(videoRef.current);
+        
+      } else if (videoRef.current.canPlayType('application/vnd.apple.mpegurl')) {
+        // Native HLS support (Safari)
+        videoRef.current.src = videoUrl;
+        // For native HLS, we can't extract quality levels easily
+        if (setAvailableQualities) {
+          setAvailableQualities([]);
+        }
+      } else {
+        setError('HLS is not supported in this browser');
+      }
+    } else {
+      // Regular video file - set src directly
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
+      
       videoRef.current.src = videoUrl;
-      // For native HLS, we can't extract quality levels easily
+      
       if (setAvailableQualities) {
         setAvailableQualities([]);
       }
-    } else {
-      setError('HLS is not supported in this browser');
     }
   } catch (err) {
-    console.error('Error loading HLS:', err);
+    console.error('Error loading video:', err);
     setError('Failed to initialize video player');
   }
 };

@@ -4,7 +4,6 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 import cloudscraper
-from sources import onionflixer
 
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "*"}})

@@ -32,6 +32,7 @@ const Watch = ({ isOpen, onClose, onUpdateUrl, mediaType, tmdbId, season = 1, ep
   
   const sources = [
     'Native',
+    'Resident',
     'VidLink', 
     'VidsrcXYZ',
     'VidFast',

@@ -1,10 +1,31 @@
 import React, { useEffect, useState, useRef } from 'react';
 import PlayerTemplate from './template';
-import { initializeHLS, setupVideoEventListeners, handleSeek, skipTime, togglePlay, toggleMute, handleVolumeChange, toggleFullscreen, togglePictureInPicture, showControlsTemporarily, parseTimeToSeconds, changePlaybackSpeed, changeQuality } from './helpers';
+import { initializeVideo, setupVideoEventListeners, handleSeek, skipTime, togglePlay, toggleMute, handleVolumeChange, toggleFullscreen, togglePictureInPicture, showControlsTemporarily, parseTimeToSeconds, changePlaybackSpeed, changeQuality } from './helpers';
 import { saveProgress, getProgress } from '../progress';
 import { isMobileDevice } from '../../utils';
 
-const VideoPlayer = ({ videoUrl, onError, showCaptionsPopup, setShowCaptionsPopup, subtitlesEnabled, subtitleError, subtitlesLoading, availableSubtitles, selectedSubtitle, onSelectSubtitle, subtitleCues, mediaId, mediaType, season = 0, episode = 0, sourceIndex = 0 }) => {
+const VideoPlayer = ({ 
+  videoUrl, 
+  originalVideoUrl,
+  onError, 
+  showCaptionsPopup, 
+  setShowCaptionsPopup, 
+  subtitlesEnabled, 
+  subtitleError, 
+  subtitlesLoading, 
+  availableSubtitles, 
+  selectedSubtitle, 
+  onSelectSubtitle, 
+  subtitleCues, 
+  availableQualities: externalQualities,
+  selectedQuality: externalSelectedQuality,
+  onQualityChange: externalOnQualityChange,
+  mediaId, 
+  mediaType, 
+  season = 0, 
+  episode = 0, 
+  sourceIndex = 0 
+}) => {
   // Video state
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -163,12 +184,12 @@ const VideoPlayer = ({ videoUrl, onError, showCaptionsPopup, setShowCaptionsPopu
     };
   }, [videoUrl, mediaId, mediaType, season, episode, sourceIndex]);
 
-  // Initialize HLS when videoUrl changes
+  // Initialize video when videoUrl changes
   useEffect(() => {
     if (videoUrl) {
       setIsVideoLoading(true);
       setQualitiesLoading(true);
-      initializeHLS(videoUrl, videoRef, hlsRef, onError, setAvailableQualities);
+      initializeVideo(videoUrl, videoRef, hlsRef, onError, setAvailableQualities);
       setQualitiesLoading(false);
       setProgressLoaded(false);
     } else {
@@ -206,11 +227,21 @@ const VideoPlayer = ({ videoUrl, onError, showCaptionsPopup, setShowCaptionsPopu
     };
   }, [videoUrl]);
 
+  // Use external qualities if provided, otherwise use internal ones
+  const finalAvailableQualities = externalQualities || availableQualities;
+  const finalSelectedQuality = externalSelectedQuality || selectedQuality;
+
   useEffect(() => {
-    if (availableQualities.length > 0 && !selectedQuality) {
+    if (availableQualities.length > 0 && !selectedQuality && !externalQualities) {
       setSelectedQuality(availableQualities[0]);
     }
-  }, [availableQualities, selectedQuality]);
+  }, [availableQualities, selectedQuality, externalQualities]);
+
+  useEffect(() => {
+    if (externalSelectedQuality && externalSelectedQuality !== selectedQuality) {
+      setSelectedQuality(externalSelectedQuality);
+    }
+  }, [externalSelectedQuality, selectedQuality]);
 
   useEffect(() => {
     // Only show custom subtitles on non-mobile devices
@@ -499,8 +530,12 @@ const VideoPlayer = ({ videoUrl, onError, showCaptionsPopup, setShowCaptionsPopu
   };
 
   const handleQualityChange = (quality) => {
-    setSelectedQuality(quality);
-    changeQuality(quality, hlsRef, videoRef, currentTime);
+    if (externalOnQualityChange) {
+      externalOnQualityChange(quality);
+    } else {
+      setSelectedQuality(quality);
+      changeQuality(quality, hlsRef, videoRef, currentTime);
+    }
     saveProgressNow();
   };
 
@@ -632,8 +667,8 @@ const VideoPlayer = ({ videoUrl, onError, showCaptionsPopup, setShowCaptionsPopu
       showSettingsPopup={showSettingsPopup}
       setShowSettingsPopup={setShowSettingsPopup}
       playbackSpeed={playbackSpeed}
-      availableQualities={availableQualities}
-      selectedQuality={selectedQuality}
+      availableQualities={finalAvailableQualities}
+      selectedQuality={finalSelectedQuality}
       qualitiesLoading={qualitiesLoading}
       
       // Event handlers
