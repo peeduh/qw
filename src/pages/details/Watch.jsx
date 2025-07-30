@@ -32,22 +32,21 @@ const Watch = ({ isOpen, onClose, onUpdateUrl, mediaType, tmdbId, season = 1, ep
   
   const sources = [
     'Resident',
-    'VidLink', 
-    'VidsrcXYZ',
-    'VidFast',
     'Videasy',
+    'VidLink',
+     'VidFast',
+     'Primenet',
+    'VidsrcXYZ',
     'VidsrcSU',
-    'Vidora',
-    'Native',
   ];
 
   const sourceHasAds = (source) => {
-    const sourcesWithAds = ['VidLink', 'VidsrcXYZ', 'VidFast'];
+    const sourcesWithAds = ['VidLink', 'VidsrcXYZ', 'VidFast', 'VidsrcSU'];
     return sourcesWithAds.includes(source);
   };
 
   const sourceNeedsSandbox = (source) => {
-    const sourcesWithSandbox = ['Videasy', 'VidsrcSU'];
+    const sourcesWithSandbox = ['Videasy'];
     return sourcesWithSandbox.includes(source);
   };
 
