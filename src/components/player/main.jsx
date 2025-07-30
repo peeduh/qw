@@ -210,11 +210,42 @@ const VideoPlayer = ({
     const handleCanPlay = () => { setIsVideoLoading(false); };
     const handleWaiting = () => { setIsVideoLoading(true); };
     const handleLoadStart = () => { setIsVideoLoading(true); };
+    const handleSeeking = () => { setIsVideoLoading(true); };
+    const handleSeeked = () => { setIsVideoLoading(false); };
+    
+    // Optimize buffering for partial content
+    const handleProgress = () => {
+      if (videoRef.current && videoRef.current.buffered.length > 0) {
+        const buffered = videoRef.current.buffered;
+        const currentTime = videoRef.current.currentTime;
+        
+        // Calculate buffered amount more accurately
+        let bufferedEnd = 0;
+        for (let i = 0; i < buffered.length; i++) {
+          if (buffered.start(i) <= currentTime && buffered.end(i) > currentTime) {
+            bufferedEnd = buffered.end(i);
+            break;
+          }
+        }
+        
+        if (bufferedEnd === 0 && buffered.length > 0) {
+          bufferedEnd = buffered.end(buffered.length - 1);
+        }
+        
+        const duration = videoRef.current.duration;
+        if (duration > 0) {
+          setBufferedAmount((bufferedEnd / duration) * 100);
+        }
+      }
+    };
 
     if (videoRef.current) {
       videoRef.current.addEventListener('canplay', handleCanPlay);
       videoRef.current.addEventListener('waiting', handleWaiting);
       videoRef.current.addEventListener('loadstart', handleLoadStart);
+      videoRef.current.addEventListener('seeking', handleSeeking);
+      videoRef.current.addEventListener('seeked', handleSeeked);
+      videoRef.current.addEventListener('progress', handleProgress);
     }
 
     return () => {
@@ -223,6 +254,9 @@ const VideoPlayer = ({
         videoRef.current.removeEventListener('canplay', handleCanPlay);
         videoRef.current.removeEventListener('waiting', handleWaiting);
         videoRef.current.removeEventListener('loadstart', handleLoadStart);
+        videoRef.current.removeEventListener('seeking', handleSeeking);
+        videoRef.current.removeEventListener('seeked', handleSeeked);
+        videoRef.current.removeEventListener('progress', handleProgress);
       }
     };
   }, [videoUrl]);

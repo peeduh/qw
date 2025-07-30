@@ -76,21 +76,30 @@ const PrimeBox = () => {
         setPrimeboxData(data);
         
         // Set available qualities
-        const qualities = data.available_qualities || Object.keys(data.streams);
-        setAvailableQualities(qualities);
+        const qualityNames = data.available_qualities || Object.keys(data.streams);
+        const formattedQualities = qualityNames.map((qualityName, index) => {
+          const heightMatch = qualityName.match(/(\d+)[pP]/);
+          const height = heightMatch ? parseInt(heightMatch[1]) : 0;
+          
+          return { index, quality: qualityName, url: data.streams[qualityName], height: height, width: 0, bitrate: 0 };
+        });
         
-        const bestQuality = qualities[0];
+        // Sort by quality (highest first)
+        formattedQualities.sort((a, b) => b.height - a.height);
+        setAvailableQualities(formattedQualities);
+        
+        const bestQuality = formattedQualities[0];
         setSelectedQuality(bestQuality);
         
         // Get the stream URL for the selected quality
-        const streamUrl = data.streams[bestQuality];
+        const streamUrl = bestQuality.url;
         if (!streamUrl) {
           throw new Error('No stream URL found for selected quality');
         }
         
         setOriginalVideoUrl(streamUrl);
         
-        const proxiedUrl = `${config.proxy.replace('/api/proxy', '/api/video-proxy')}?url=${encodeURIComponent(streamUrl)}&referer=${encodeURIComponent('https://pstream.mov')}`;
+        const proxiedUrl = `${config.proxy}/api/video-proxy?url=${encodeURIComponent(streamUrl)}&referer=${encodeURIComponent('https://pstream.mov')}&cache=true`;
         setVideoUrl(proxiedUrl);
         
       } catch (err) {
@@ -106,17 +115,17 @@ const PrimeBox = () => {
     }
   }, [tmdbid, season, episode, mediaType]);
 
-  const changeQuality = async (newQuality) => {
-    if (!primeboxData || !primeboxData.streams[newQuality]) return;
+  const changeQuality = async (qualityObject) => {
+    if (!primeboxData || !qualityObject || !qualityObject.url) { return; }
     
     try {
       setLoading(true);
-      setSelectedQuality(newQuality);
+      setSelectedQuality(qualityObject);
       
-      const streamUrl = primeboxData.streams[newQuality];
+      const streamUrl = qualityObject.url;
       setOriginalVideoUrl(streamUrl);
       
-      const proxiedUrl = `${config.proxy.replace('/api/proxy', '/api/video-proxy')}?url=${encodeURIComponent(streamUrl)}&referer=${encodeURIComponent('https://pstream.mov')}`;
+      const proxiedUrl = `${config.proxy}/api/video-proxy?url=${encodeURIComponent(streamUrl)}&referer=${encodeURIComponent('https://pstream.mov')}&cache=true`;
       setVideoUrl(proxiedUrl);
       
     } catch (err) {

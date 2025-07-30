@@ -21,7 +21,34 @@ export const initializeVideo = async (videoUrl, videoRef, hlsRef, setError, setA
       if (Hls.isSupported()) {
         if (hlsRef.current) { hlsRef.current.destroy(); }
 
-        const hls = new Hls({ enableWorker: true, lowLatencyMode: false, backBufferLength: 90 });
+        const hls = new Hls({ 
+          enableWorker: true, 
+          lowLatencyMode: false, 
+          backBufferLength: 90,
+          maxBufferLength: 30,
+          maxMaxBufferLength: 600,
+          maxBufferSize: 60 * 1000 * 1000,
+          maxBufferHole: 0.5,
+          highBufferWatchdogPeriod: 2,
+          nudgeOffset: 0.1,
+          nudgeMaxRetry: 3,
+          maxFragLookUpTolerance: 0.25,
+          liveSyncDurationCount: 3,
+          liveMaxLatencyDurationCount: Infinity,
+          liveDurationInfinity: false,
+          enableSoftwareAES: true,
+          manifestLoadingTimeOut: 10000,
+          manifestLoadingMaxRetry: 1,
+          manifestLoadingRetryDelay: 1000,
+          levelLoadingTimeOut: 10000,
+          levelLoadingMaxRetry: 4,
+          levelLoadingRetryDelay: 1000,
+          fragLoadingTimeOut: 20000,
+          fragLoadingMaxRetry: 6,
+          fragLoadingRetryDelay: 1000,
+          startFragPrefetch: true,
+          testBandwidth: true
+        });
         hlsRef.current = hls;
 
         hls.on(Hls.Events.ERROR, (event, data) => {
@@ -80,7 +107,17 @@ export const initializeVideo = async (videoUrl, videoRef, hlsRef, setError, setA
         hlsRef.current = null;
       }
       
-      videoRef.current.src = videoUrl;
+      const video = videoRef.current;
+      video.preload = 'metadata';
+      video.crossOrigin = 'anonymous';
+      video.src = videoUrl;
+      
+      const handleLoadedMetadata = () => {
+        video.preload = 'auto';
+        video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      };
+      
+      video.addEventListener('loadedmetadata', handleLoadedMetadata);
       
       if (setAvailableQualities) {
         setAvailableQualities([]);

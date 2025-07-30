@@ -85,7 +85,7 @@ const SubtitleManager = ({
                     e.stopPropagation();
                     selectSubtitle(null);
                   }}
-                  className={`mx-1 my-0.5 px-2 py-2 rounded-md cursor-pointer transition-all duration-200 hover:bg-white focus:bg-white ${!selectedSubtitle ? 'bg-zinc-600/20 text-zinc-300' : 'text-white/80'}`}
+                  className={`mx-1 my-0.5 px-2 py-2 rounded-md cursor-pointer transition-all duration-200 hover:bg-white focus:bg-white ${!selectedSubtitle ? 'bg-zinc-600/30 text-zinc-300' : 'text-white/80'}`}
                 >
                   <div className="flex items-center space-x-3">
                     <div className="w-6 h-4 bg-gray-600 rounded-xs flex items-center justify-center">
@@ -99,7 +99,7 @@ const SubtitleManager = ({
                   <DropdownMenuItem
                     key={subtitle.id}
                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); selectSubtitle(subtitle); }}
-                    className={`mx-1 my-0.5 px-2 py-2 rounded-md cursor-pointer transition-all duration-200 hover:bg-white focus:bg-white animate-in fade-in-0 slide-in-from-left-1 ${selectedSubtitle?.id === subtitle.id ? 'bg-zinc-600/20 text-zinc-300' : 'text-white/80'}`}
+                    className={`mx-1 my-0.5 px-2 py-2 rounded-md cursor-pointer transition-all duration-200 hover:bg-white focus:bg-white animate-in fade-in-0 slide-in-from-left-1 ${selectedSubtitle?.id === subtitle.id ? 'bg-zinc-600/30 text-zinc-300' : 'text-white/80'}`}
                     style={{ animationDelay: `${index * 50}ms` }}
                   >
                     <div className="flex items-center space-x-3">

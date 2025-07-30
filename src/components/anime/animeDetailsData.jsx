@@ -6,7 +6,7 @@ import { fetchTmdb, getTmdbImage } from '../../utils.jsx';
 
 export async function extractAnimeInfo(id) {
   try {
-    const response = await fetch(config.proxy, {
+    const response = await fetch(`${config.proxy}/api/proxy`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
