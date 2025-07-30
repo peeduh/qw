@@ -1,14 +1,14 @@
 export function getSource(source, type, id, season=0, episode=0) {
   switch(source) {
+    case 'Resident':
+      return type === 'movie'
+        ? `/e/fox/${id}`
+        : `/e/fox/${id}/${season}/${episode}`;
+        
     case 'Native':
       return type === 'movie'
         ? `/e/primenet/${id}`
         : `/e/primenet/${id}/${season}/${episode}`;
-
-    case 'Resident':
-      return type === 'movie'
-        ? `/e/primebox/${id}`
-        : `/e/primebox/${id}/${season}/${episode}`;
     
     case 'VidLink':
       return type === 'movie'
