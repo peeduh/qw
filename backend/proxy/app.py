@@ -29,13 +29,13 @@ def proxy():
         method = data.get('method', '').upper()
         headers = data.get('headers', {})
         use_cloudscraper = data.get('cf', False)
+        max_size = data.get('max_size', 10 * 1024 * 1024)  # Default 10MB limit
         
         if not url: return jsonify({'error': 'URL is required'})
         if method not in ['GET', 'POST']: return jsonify({'error': 'Only GET and POST methods are allowed'})
 
         # Set default timeout
         timeout = data.get('timeout', 30)
-        max_size = data.get('max_size', 32 * 1024 * 1024)  # 32MB default
         
         # Choose session based on cf parameter
         if use_cloudscraper:
@@ -59,7 +59,7 @@ def proxy():
         content_length = response.headers.get('Content-Length')
         if content_length and int(content_length) > max_size:
             response.close()
-            return jsonify({'error': f'Response too large: {content_length} bytes exceeds {max_size} bytes limit'}), 413
+            return jsonify({'error': f'Response too large: {content_length} bytes exceeds limit of {max_size} bytes'}), 413
         
         # Stream response with size limit
         def generate_limited():
@@ -69,21 +69,37 @@ def proxy():
                     if chunk:
                         total_size += len(chunk)
                         if total_size > max_size:
-                            return jsonify({'error': f'Response too large: exceeds {max_size} bytes limit'}), 413
+                            response.close()
+                            return
                         yield chunk
             except Exception as e:
-                return jsonify({'error': str(e)}), 500
+                response.close()
+                return
             finally:
                 response.close()
         
-        # Copy relevant headers
+        # For small responses, return content directly
+        if content_length and int(content_length) < 1024 * 1024:  # Less than 1MB
+            content = b''
+            total_size = 0
+            for chunk in response.iter_content(chunk_size=8192):
+                if chunk:
+                    total_size += len(chunk)
+                    if total_size > max_size:
+                        response.close()
+                        return jsonify({'error': f'Response too large: exceeds limit of {max_size} bytes'}), 413
+                    content += chunk
+            response.close()
+            return content
+        
+        # For larger responses, stream them
         response_headers = {}
-        headers_to_copy = ['Content-Type', 'Content-Length', 'Cache-Control']
+        headers_to_copy = ['Content-Type', 'Content-Encoding', 'Cache-Control']
         for header in headers_to_copy:
             if header in response.headers:
                 response_headers[header] = response.headers[header]
         
-        return Response(generate_limited(), status=response.status_code, headers=response_headers)
+        return Response(generate_limited(), headers=response_headers)
             
     except Exception as e:
         print(f"Error: {str(e)}")
@@ -96,7 +112,7 @@ def video_proxy():
         referer = request.args.get('referer', '')
         use_cloudscraper = request.args.get('cf', 'false').lower() == 'true'
         enable_cache = request.args.get('cache', 'false').lower() == 'true'
-        max_size = int(request.args.get('max_size', 100 * 1024 * 1024))  # 100MB default for video
+        max_size = int(request.args.get('max_size', 50 * 1024 * 1024))  # Default 50MB limit for video
         
         if not url: return
 
@@ -112,13 +128,6 @@ def video_proxy():
         
         if not response.ok: return jsonify({'error': f'Upstream server returned {response.status_code}'}), response.status_code
         
-        # Check content length if available and not a range request
-        if not range_header:
-            content_length = response.headers.get('Content-Length')
-            if content_length and int(content_length) > max_size:
-                response.close()
-                return jsonify({'error': f'Video too large: {content_length} bytes exceeds {max_size} bytes limit'}), 413
-        
         response_headers = {}
         headers_to_copy = ['Content-Type', 'Content-Length', 'Content-Range', 'Accept-Ranges', 'Last-Modified', 'ETag', 'Cache-Control']
         
@@ -126,11 +135,17 @@ def video_proxy():
             if header in response.headers:
                 response_headers[header] = response.headers[header]
         
+        # Check content length and adjust if needed
+        content_length = response.headers.get('Content-Length')
+        if content_length and int(content_length) > max_size:
+            # For large files, we'll still stream but with a warning header
+            response_headers['X-Size-Warning'] = f'Content may be truncated at {max_size} bytes'
+        
         # Set CORS headers
         response_headers['Access-Control-Allow-Origin'] = '*'
         response_headers['Access-Control-Allow-Methods'] = 'GET, HEAD, OPTIONS'
         response_headers['Access-Control-Allow-Headers'] = 'Range, Content-Type, Authorization'
-        response_headers['Access-Control-Expose-Headers'] = 'Content-Length, Content-Range, Accept-Ranges'
+        response_headers['Access-Control-Expose-Headers'] = 'Content-Length, Content-Range, Accept-Ranges, X-Size-Warning'
         
         if 'Accept-Ranges' not in response_headers: response_headers['Accept-Ranges'] = 'bytes'
         if enable_cache:
@@ -142,15 +157,18 @@ def video_proxy():
             total_size = 0
             try:
                 for chunk in response.iter_content(chunk_size=8192):
-                    if chunk: 
-                        # Only check size limit for non-range requests to avoid breaking video streaming
-                        if not range_header:
-                            total_size += len(chunk)
-                            if total_size > max_size:
-                                return
+                    if chunk:
+                        total_size += len(chunk)
+                        # For video streaming, we allow larger sizes but still have a limit
+                        if total_size > max_size:
+                            response.close()
+                            return
                         yield chunk
-            except Exception as e: return jsonify({'error': e}), 500
-            finally: response.close()
+            except Exception as e: 
+                response.close()
+                return
+            finally: 
+                response.close()
         
         status_code = response.status_code if range_header and response.status_code == 206 else 200
         
