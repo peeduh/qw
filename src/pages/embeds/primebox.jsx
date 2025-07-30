@@ -99,7 +99,7 @@ const PrimeBox = () => {
         
         setOriginalVideoUrl(streamUrl);
         
-        const proxiedUrl = `${config.proxy}/api/video-proxy?url=${encodeURIComponent(streamUrl)}&referer=${encodeURIComponent('https://pstream.mov')}&cache=true`;
+        const proxiedUrl = `${config.m3u8proxy}/api/video-proxy?url=${encodeURIComponent(streamUrl)}&referer=${encodeURIComponent('https://pstream.mov')}&cache=true`;
         setVideoUrl(proxiedUrl);
         
       } catch (err) {
@@ -125,7 +125,7 @@ const PrimeBox = () => {
       const streamUrl = qualityObject.url;
       setOriginalVideoUrl(streamUrl);
       
-      const proxiedUrl = `${config.proxy}/api/video-proxy?url=${encodeURIComponent(streamUrl)}&referer=${encodeURIComponent('https://pstream.mov')}&cache=true`;
+      const proxiedUrl = `${config.m3u8proxy}/api/video-proxy?url=${encodeURIComponent(streamUrl)}&referer=${encodeURIComponent('https://pstream.mov')}&cache=true`;
       setVideoUrl(proxiedUrl);
       
     } catch (err) {

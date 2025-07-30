@@ -430,6 +430,19 @@ function getHandler(options, proxy) {
                 }
                 const url = uri.searchParams.get("url");
                 return proxyTs(url ?? "", headers, req, res);
+            } else if (uri.pathname === "/api/video-proxy") {
+                logger.info('Video proxy request', {
+                    requestId: req.corsAnywhereRequestState.requestId,
+                    method: req.method,
+                    targetUrl: uri.searchParams.get("url")
+                });
+                return proxyVideo(req, res, uri);
+            } else if (uri.pathname === "/api/proxy") {
+                logger.info('General proxy request', {
+                    requestId: req.corsAnywhereRequestState.requestId,
+                    method: req.method
+                });
+                return proxyGeneral(req, res);
             } else if (uri.pathname === "/") {
                 logger.debug('Serving index.html for root path', {
                     requestId: req.corsAnywhereRequestState.requestId
@@ -980,4 +993,246 @@ export async function proxyTs(url: string, headers: any, req, res: http.ServerRe
     }
     
     logger.info('TS proxy request completed', { url: url });
+}
+
+/**
+ * @description Proxies video files with range support and proper headers
+ * @param req Client request object
+ * @param res Server response object
+ * @param uri Parsed URL object
+ */
+export async function proxyVideo(req: any, res: http.ServerResponse, uri: URL) {
+    try {
+        // Handle OPTIONS requests
+        if (req.method === 'OPTIONS') {
+            const response_headers = {
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+                'Access-Control-Allow-Headers': 'Range, Content-Type, Authorization',
+                'Access-Control-Expose-Headers': 'Content-Length, Content-Range, Accept-Ranges',
+                'Access-Control-Max-Age': '86400'
+            };
+            res.writeHead(200, response_headers);
+            res.end();
+            return;
+        }
+
+        const url = uri.searchParams.get('url');
+        const referer = uri.searchParams.get('referer') || '';
+        const use_cloudscraper = uri.searchParams.get('cf') === 'true';
+        const enable_cache = uri.searchParams.get('cache') === 'true';
+        
+        if (!url) {
+            res.writeHead(400, { 'Content-Type': 'text/plain' });
+            res.end('URL parameter is required');
+            return;
+        }
+
+        const upstream_headers: any = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            'Accept': '*/*',
+            'Connection': 'keep-alive',
+        };
+        
+        if (req.method === 'GET') {
+            upstream_headers['Sec-Fetch-Dest'] = 'video';
+        }
+        
+        if (referer) upstream_headers['Referer'] = referer;
+        const range_header = req.headers['range'];
+        if (range_header && req.method === 'GET') upstream_headers['Range'] = range_header;
+        
+        logger.debug('Video proxy request details', {
+            url: url,
+            method: req.method,
+            referer: referer,
+            range: range_header,
+            cloudscraper: use_cloudscraper
+        });
+
+        let response;
+        const axiosConfig: any = {
+            method: req.method === 'HEAD' ? 'HEAD' : 'GET',
+            url: url,
+            headers: upstream_headers,
+            timeout: req.method === 'HEAD' ? 10000 : 30000,
+            validateStatus: () => true // Accept all status codes
+        };
+
+        if (req.method === 'GET') {
+            axiosConfig.responseType = 'stream';
+        }
+
+        response = await axios(axiosConfig);
+        
+        if (response.status >= 400) {
+            logger.error('Upstream server error', {
+                url: url,
+                status: response.status,
+                statusText: response.statusText
+            });
+            res.writeHead(response.status, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: `Upstream server returned ${response.status}` }));
+            return;
+        }
+        
+        const response_headers: any = {};
+        const headers_to_copy = ['Content-Type', 'Content-Length', 'Content-Range', 'Accept-Ranges', 'Last-Modified', 'ETag', 'Cache-Control'];
+        
+        for (const header of headers_to_copy) {
+            if (response.headers[header.toLowerCase()]) {
+                response_headers[header] = response.headers[header.toLowerCase()];
+            }
+        }
+        
+        // Set CORS headers
+        response_headers['Access-Control-Allow-Origin'] = '*';
+        response_headers['Access-Control-Allow-Methods'] = 'GET, HEAD, OPTIONS';
+        response_headers['Access-Control-Allow-Headers'] = 'Range, Content-Type, Authorization';
+        response_headers['Access-Control-Expose-Headers'] = 'Content-Length, Content-Range, Accept-Ranges';
+        
+        if (!response_headers['Accept-Ranges']) response_headers['Accept-Ranges'] = 'bytes';
+        
+        if (enable_cache) {
+            response_headers['Cache-Control'] = 'public, max-age=3600, stale-while-revalidate=86400';
+            response_headers['Vary'] = 'Range';
+        } else {
+            response_headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
+        }
+        
+        if (req.method === 'HEAD') {
+            res.writeHead(200, response_headers);
+            res.end();
+            return;
+        }
+        
+        const status_code = range_header && response.status === 206 ? 206 : 200;
+        res.writeHead(status_code, response_headers);
+        
+        response.data.pipe(res);
+        
+        logger.info('Video proxy request completed successfully', {
+            url: url,
+            method: req.method,
+            status: status_code,
+            contentType: response_headers['Content-Type']
+        });
+        
+    } catch (error: any) {
+        logger.error('Video proxy error', {
+            error: error.message,
+            stack: error.stack
+        });
+        if (!res.headersSent) {
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'An unexpected error occurred.' }));
+        }
+    }
+}
+
+/**
+ * @description Handles general proxy requests (POST/GET)
+ * @param req Client request object
+ * @param res Server response object
+ */
+export async function proxyGeneral(req: any, res: http.ServerResponse) {
+    try {
+        // Handle OPTIONS requests
+        if (req.method === 'OPTIONS') {
+            res.setHeader('Access-Control-Allow-Origin', '*');
+            res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+            res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+            res.setHeader('Access-Control-Max-Age', '86400');
+            res.writeHead(200);
+            res.end();
+            return;
+        }
+
+        let body = '';
+        
+        // Collect request body for POST requests
+        req.on('data', (chunk: any) => {
+            body += chunk.toString();
+        });
+        
+        req.on('end', async () => {
+            try {
+                const data = body ? JSON.parse(body) : {};
+                const url = data.url;
+                const method = (data.method || 'GET').toUpperCase();
+                const headers = data.headers || {};
+                const use_cloudscraper = data.cf || false;
+                const timeout = data.timeout || 30;
+                
+                if (!url) {
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ error: 'URL is required' }));
+                    return;
+                }
+                
+                if (!['GET', 'POST'].includes(method)) {
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ error: 'Only GET and POST methods are allowed' }));
+                    return;
+                }
+                
+                logger.debug('General proxy request', {
+                    url: url,
+                    method: method,
+                    cloudscraper: use_cloudscraper,
+                    timeout: timeout
+                });
+                
+                let response;
+                const config: any = {
+                    method: method,
+                    url: url,
+                    headers: headers,
+                    timeout: timeout * 1000,
+                    responseType: 'arraybuffer',
+                    validateStatus: () => true // Accept all status codes
+                };
+                
+                if (method === 'POST' && data.form_data) {
+                    config.data = data.form_data;
+                }
+                
+                response = await axios(config);
+                
+                // Set CORS headers
+                res.setHeader('Access-Control-Allow-Origin', '*');
+                res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+                res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+                
+                res.writeHead(response.status, {
+                    'Content-Type': response.headers['content-type'] || 'application/octet-stream'
+                });
+                res.end(Buffer.from(response.data));
+                
+                logger.info('General proxy request completed', {
+                    url: url,
+                    method: method,
+                    status: response.status
+                });
+                
+            } catch (parseError: any) {
+                logger.error('Error parsing request body', {
+                    error: parseError.message,
+                    body: body
+                });
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: 'Invalid JSON in request body' }));
+            }
+        });
+        
+    } catch (error: any) {
+        logger.error('General proxy error', {
+            error: error.message,
+            stack: error.stack
+        });
+        if (!res.headersSent) {
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'An unexpected error occurred.' }));
+        }
+    }
 }

@@ -29,7 +29,6 @@ def proxy():
         method = data.get('method', '').upper()
         headers = data.get('headers', {})
         use_cloudscraper = data.get('cf', False)
-        max_size = data.get('max_size', 10 * 1024 * 1024)  # Default 10MB limit
         
         if not url: return jsonify({'error': 'URL is required'})
         if method not in ['GET', 'POST']: return jsonify({'error': 'Only GET and POST methods are allowed'})
@@ -42,181 +41,28 @@ def proxy():
             scraper = cloudscraper.CloudScraper()
             if method == 'GET': 
                 response = scraper.get(url, headers=headers, timeout=timeout, stream=True)
+                response.raise_for_status()
+                return response.content
             else: 
                 form_data = data.get('form_data', {})
                 response = scraper.post(url, data=form_data, headers=headers, timeout=timeout, stream=True)
+                response.raise_for_status()
+                return response.content
         else:
             # Use regular session for connection pooling
             if method == 'GET': 
                 response = session.get(url, headers=headers, timeout=timeout, stream=True)
+                response.raise_for_status()
+                return response.content
             else: 
                 form_data = data.get('form_data', {})
                 response = session.post(url, data=form_data, headers=headers, timeout=timeout, stream=True)
-        
-        response.raise_for_status()
-        
-        # Check content length if available
-        content_length = response.headers.get('Content-Length')
-        if content_length and int(content_length) > max_size:
-            response.close()
-            return jsonify({'error': f'Response too large: {content_length} bytes exceeds limit of {max_size} bytes'}), 413
-        
-        # Stream response with size limit
-        def generate_limited():
-            total_size = 0
-            try:
-                for chunk in response.iter_content(chunk_size=8192):
-                    if chunk:
-                        total_size += len(chunk)
-                        if total_size > max_size:
-                            response.close()
-                            return
-                        yield chunk
-            except Exception as e:
-                response.close()
-                return
-            finally:
-                response.close()
-        
-        # For small responses, return content directly
-        if content_length and int(content_length) < 1024 * 1024:  # Less than 1MB
-            content = b''
-            total_size = 0
-            for chunk in response.iter_content(chunk_size=8192):
-                if chunk:
-                    total_size += len(chunk)
-                    if total_size > max_size:
-                        response.close()
-                        return jsonify({'error': f'Response too large: exceeds limit of {max_size} bytes'}), 413
-                    content += chunk
-            response.close()
-            return content
-        
-        # For larger responses, stream them
-        response_headers = {}
-        headers_to_copy = ['Content-Type', 'Content-Encoding', 'Cache-Control']
-        for header in headers_to_copy:
-            if header in response.headers:
-                response_headers[header] = response.headers[header]
-        
-        return Response(generate_limited(), headers=response_headers)
+                response.raise_for_status()
+                return response.content
             
     except Exception as e:
         print(f"Error: {str(e)}")
         return jsonify({'error': 'An unexpected error occurred.'}), 500
-
-@app.route('/api/video-proxy', methods=['GET'])
-def video_proxy():
-    try:
-        url = request.args.get('url')
-        referer = request.args.get('referer', '')
-        use_cloudscraper = request.args.get('cf', 'false').lower() == 'true'
-        enable_cache = request.args.get('cache', 'false').lower() == 'true'
-        max_size = int(request.args.get('max_size', 50 * 1024 * 1024))  # Default 50MB limit for video
-        
-        if not url: return
-
-        upstream_headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36', 'Accept': '*/*', 'Connection': 'keep-alive', 'Sec-Fetch-Dest': 'video',}
-        if referer: upstream_headers['Referer'] = referer
-        range_header = request.headers.get('Range')
-        if range_header: upstream_headers['Range'] = range_header
-        
-        if use_cloudscraper:
-            scraper = cloudscraper.CloudScraper()
-            response = scraper.get(url, headers=upstream_headers, stream=True, timeout=30)
-        else: response = session.get(url, headers=upstream_headers, stream=True, timeout=30)
-        
-        if not response.ok: return jsonify({'error': f'Upstream server returned {response.status_code}'}), response.status_code
-        
-        response_headers = {}
-        headers_to_copy = ['Content-Type', 'Content-Length', 'Content-Range', 'Accept-Ranges', 'Last-Modified', 'ETag', 'Cache-Control']
-        
-        for header in headers_to_copy:
-            if header in response.headers:
-                response_headers[header] = response.headers[header]
-        
-        # Check content length and adjust if needed
-        content_length = response.headers.get('Content-Length')
-        if content_length and int(content_length) > max_size:
-            # For large files, we'll still stream but with a warning header
-            response_headers['X-Size-Warning'] = f'Content may be truncated at {max_size} bytes'
-        
-        # Set CORS headers
-        response_headers['Access-Control-Allow-Origin'] = '*'
-        response_headers['Access-Control-Allow-Methods'] = 'GET, HEAD, OPTIONS'
-        response_headers['Access-Control-Allow-Headers'] = 'Range, Content-Type, Authorization'
-        response_headers['Access-Control-Expose-Headers'] = 'Content-Length, Content-Range, Accept-Ranges, X-Size-Warning'
-        
-        if 'Accept-Ranges' not in response_headers: response_headers['Accept-Ranges'] = 'bytes'
-        if enable_cache:
-            response_headers['Cache-Control'] = 'public, max-age=3600, stale-while-revalidate=86400'
-            response_headers['Vary'] = 'Range'
-        else: response_headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
-        
-        def generate():
-            total_size = 0
-            try:
-                for chunk in response.iter_content(chunk_size=8192):
-                    if chunk:
-                        total_size += len(chunk)
-                        # For video streaming, we allow larger sizes but still have a limit
-                        if total_size > max_size:
-                            response.close()
-                            return
-                        yield chunk
-            except Exception as e: 
-                response.close()
-                return
-            finally: 
-                response.close()
-        
-        status_code = response.status_code if range_header and response.status_code == 206 else 200
-        
-        return Response(generate(), status=status_code, headers=response_headers, direct_passthrough=True)
-    except Exception as e: return jsonify({'error': e}), 500
-
-@app.route('/api/video-proxy', methods=['HEAD'])
-def video_proxy_head():
-    try:
-        url = request.args.get('url')
-        referer = request.args.get('referer', '')
-        use_cloudscraper = request.args.get('cf', 'false').lower() == 'true'
-        
-        if not url: return
-        
-        upstream_headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36', 'Accept': '*/*', 'Accept-Language': 'en-US,en;q=0.9', 'Connection': 'keep-alive'}
-        
-        if referer: upstream_headers['Referer'] = referer
-        
-        if use_cloudscraper:
-            scraper = cloudscraper.CloudScraper()
-            response = scraper.head(url, headers=upstream_headers, timeout=10)
-        else: response = session.head(url, headers=upstream_headers, timeout=10)
-        
-        if not response.ok: return '', response.status_code
-        
-        response_headers = {}
-        headers_to_copy = ['Content-Type', 'Content-Length', 'Accept-Ranges', 'Last-Modified', 'ETag', 'Cache-Control']
-        
-        for header in headers_to_copy:
-            if header in response.headers: response_headers[header] = response.headers[header]
-        
-        response_headers['Access-Control-Allow-Origin'] = '*'
-        response_headers['Access-Control-Allow-Methods'] = 'GET, HEAD, OPTIONS'
-        response_headers['Access-Control-Allow-Headers'] = 'Range, Content-Type, Authorization'
-        response_headers['Access-Control-Expose-Headers'] = 'Content-Length, Content-Range, Accept-Ranges'
-        
-        response_headers['Accept-Ranges'] = 'bytes'
-        
-        return Response('', status=200, headers=response_headers)
-        
-    except Exception as e:
-        return jsonify({'error': e}), 500
-
-@app.route('/api/video-proxy', methods=['OPTIONS'])
-def video_proxy_options():
-    response_headers = {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS', 'Access-Control-Allow-Headers': 'Range, Content-Type, Authorization', 'Access-Control-Expose-Headers': 'Content-Length, Content-Range, Accept-Ranges', 'Access-Control-Max-Age': '86400'}
-    return Response('', status=200, headers=response_headers)
 
 if __name__ == '__main__':
     app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
