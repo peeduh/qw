@@ -1,7 +1,14 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getTmdbImage } from '../../utils.jsx';
-import { Play } from 'lucide-react';
+import { Play, ChevronDown } from 'lucide-react';
 import CarouselItem from '../../components/carouselItem.jsx';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../../components/ui/dropdown-menu";
 
 export const EpisodeCard = ({ episode }) => {
   const episodeItem = {
@@ -60,13 +67,22 @@ export const TrailerCard = ({ video, variant = 'default' }) => {
 };
 
 export const CastCard = ({ person }) => {
+  const navigate = useNavigate();
+  
+  const handleClick = () => {
+    navigate(`/person/${person.id}`);
+  };
+
   return (
-    <div className="flex-shrink-0 w-40 cursor-pointer animate-scale-in text-center transition-all !duration-300 !ease hover:scale-110 hover:z-10">
+    <div 
+      onClick={handleClick}
+      className="flex-shrink-0 w-40 cursor-pointer animate-scale-in text-center transition-all !duration-300 !ease hover:scale-110 hover:z-10"
+    >
       <div className="relative rounded-full overflow-hidden mb-2 aspect-square bg-cover bg-center w-32 h-32 mx-auto"
            style={{ backgroundImage: `url(${getTmdbImage(person.profile_path, 'w185')})` }}>
         {!person.profile_path && (
-          <div className="w-full h-full bg-gray-600 flex items-center justify-center">
-            <span className="text-white text-xs">No Image</span>
+          <div className="w-full h-full bg-neutral-800 flex items-center justify-center">
+            <span className="text-white text-5xl">?</span>
           </div>
         )}
       </div>
@@ -76,7 +92,7 @@ export const CastCard = ({ person }) => {
   );
 };
 
-export const MediaCard = ({ item }) => {
+export const MediaCard = ({ item, variant = 'grid' }) => {
   const [isMobile, setIsMobile] = useState(false);
   
   useEffect(() => {
@@ -88,20 +104,20 @@ export const MediaCard = ({ item }) => {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
   
+  if (variant === 'grid') {
+    return (
+      <div className="w-full cursor-pointer animate-scale-in">
+        <CarouselItem item={item} usePoster={false} variant="grid" />
+      </div>
+    );
+  }
+  
   return (
     <div className="flex-shrink-0 w-40 md:w-96 cursor-pointer animate-scale-in">
       <CarouselItem item={item} usePoster={isMobile} />
     </div>
   );
 };
-
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "../../components/ui/dropdown-menu";
-import { ChevronDown } from "lucide-react";
 
 export const SeasonDropdown = ({ seasons, selectedSeason, onSeasonChange }) => {
   return (
@@ -125,8 +141,8 @@ export const SeasonDropdown = ({ seasons, selectedSeason, onSeasonChange }) => {
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-xs text-gray-400">
-                  No Image
+                <div className="w-full h-full flex items-center justify-center text-lg text-neutral-500">
+                  ?
                 </div>
               )}
             </div>

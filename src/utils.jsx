@@ -187,7 +187,12 @@ export const getImagePath = (detailedItem, item) => {
     const englishBackdrop = detailedItem.images.backdrops.find(backdrop => backdrop.iso_639_1 === 'en' || backdrop.iso_639_1 === null);
     if (englishBackdrop) { return englishBackdrop.file_path; }
   }
-  return detailedItem.backdrop_path || item.backdrop_path;
+  
+  if (detailedItem.backdrop_path || item.backdrop_path) {
+    return detailedItem.backdrop_path || item.backdrop_path;
+  }
+  
+  return detailedItem.poster_path || item.poster_path;
 };
 
 export const hasEnglishBackdrop = (detailedItem) => {

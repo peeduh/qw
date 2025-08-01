@@ -41,6 +41,13 @@ const CarouselItem = ({ item, variant = 'default', episodeNumber, usePoster = fa
   const imagePath = usePoster ? (detailedItem.poster_path || item.poster_path) : getImagePath(detailedItem, item);
   if (!imagePath) return null;
   
+  const isUsingPosterFallback = !usePoster && (
+    (!detailedItem.images?.backdrops || detailedItem.images.backdrops.length === 0) &&
+    !detailedItem.backdrop_path && 
+    !item.backdrop_path &&
+    (imagePath === detailedItem.poster_path || imagePath === item.poster_path)
+  );
+  
   const rating = detailedItem.vote_average?.toFixed(1) || item.vote_average?.toFixed(1) || 'N/A';
   const runtime = detailedItem.runtime ? `${Math.floor(detailedItem.runtime / 60)}h ${detailedItem.runtime % 60}m` : 
                   detailedItem.number_of_seasons ? `${detailedItem.number_of_seasons} seasons` : '';
@@ -140,6 +147,67 @@ const CarouselItem = ({ item, variant = 'default', episodeNumber, usePoster = fa
   
   const logoPath = getLogoPath(detailedItem);
   const showOverlay = !hasEnglishBackdrop(detailedItem);
+  
+  if (variant === 'grid') {
+    return (
+      <div className="w-full cursor-pointer transition-all duration-300 hover:scale-105" onClick={handleClick}>
+        <div className="relative rounded-lg overflow-hidden aspect-video">
+          {isUsingPosterFallback ? (
+            <img 
+              src={getTmdbImage(imagePath, 'w500')} 
+              alt={title}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div 
+              className="w-full h-full bg-cover bg-center"
+              style={{ backgroundImage: `url(${getTmdbImage(imagePath, 'w500')})` }}
+            />
+          )}
+          
+          {showOverlay && !isUsingPosterFallback && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              {logoPath ? (
+                <img src={getTmdbImage(logoPath, 'w300')} alt={title} className="w-[70%] max-h-[60%] object-contain drop-shadow-[0_4px_8px_#000]" />
+              ) : (
+                <h2 className="text-white text-xl font-medium text-center px-4 drop-shadow-[0_4px_8px_#000]">{title}</h2>
+              )}
+            </div>
+          )}
+          
+          <div className="absolute inset-0 bg-black/70 opacity-0 hover:opacity-100 transition-opacity duration-300 p-3 flex flex-col justify-end items-start">
+            <h3 className="text-white font-normal text-lg mb-2 line-clamp-2">{title}</h3>
+            <div className="flex items-center justify-between w-full">
+              <div className="flex items-center gap-1 text-xs text-white font-normal">
+                <div className="bg-gradient-to-r from-[#90cea1] to-[#01b4e4] text-black px-1 py-[1px] rounded font-black tracking-tighter text-xs">TMDB</div>
+                <span>{rating}</span>
+                <span>•</span>
+                <span>{formattedDate}</span>
+                {runtime && (
+                  <>
+                    <span>•</span>
+                    <span>{runtime}</span>
+                  </>
+                )}
+              </div>
+              <button 
+                onClick={handleWatchlistToggle}
+                className={`text-white p-1 rounded-full transition-all cursor-pointer ${inWatchlist ? 'bg-white/25' : 'bg-white/15 hover:bg-white/25'}`}
+              >
+                <Plus className="w-3 h-3" />
+              </button>
+            </div>
+          </div>
+          
+          {loading && (
+            <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+              <div className="w-4 h-4 border-2 border-white border-solid border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className={`relative rounded-lg overflow-hidden transition-all duration-300 hover:scale-105 hover:z-10 bg-cover bg-center cursor-pointer ${usePoster ? 'aspect-[2/3] w-40 md:w-auto' : 'aspect-video'}`}
