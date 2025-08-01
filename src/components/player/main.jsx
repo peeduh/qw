@@ -48,6 +48,13 @@ const VideoPlayer = ({
   // Subtitle state
   const [currentSubtitleText, setCurrentSubtitleText] = useState('');
   
+  // Subtitle settings state
+  const [subtitleSettings, setSubtitleSettings] = useState({
+    fontSize: 18,
+    delay: 0,
+    position: 'center'
+  });
+  
   // Settings state
   const [showSettingsPopup, setShowSettingsPopup] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
@@ -287,14 +294,16 @@ const VideoPlayer = ({
       return;
     }
 
+    const adjustedTime = currentTime - subtitleSettings.delay;
+
     const currentCue = subtitleCues.find(cue => {
       const startTime = parseTimeToSeconds(cue.startTime);
       const endTime = parseTimeToSeconds(cue.endTime);
-      return currentTime >= startTime && currentTime <= endTime;
+      return adjustedTime >= startTime && adjustedTime <= endTime;
     });
 
     setCurrentSubtitleText(currentCue ? currentCue.text : '');
-  }, [currentTime, subtitlesEnabled, selectedSubtitle, subtitleCues]);
+  }, [currentTime, subtitlesEnabled, selectedSubtitle, subtitleCues, subtitleSettings.delay]);
 
   useEffect(() => {
     if (!videoRef.current) return;
@@ -549,6 +558,11 @@ const VideoPlayer = ({
     saveProgressNow();
   };
 
+  const handleSubtitleSettingsChange = (newSettings) => {
+    setSubtitleSettings(prev => ({ ...prev, ...newSettings }));
+    saveProgressNow();
+  };
+
   const handleVideoError = (e) => {
     console.error('Video playback error:', e);
     onError('Video playback failed. Please try again.');
@@ -694,6 +708,8 @@ const VideoPlayer = ({
       availableSubtitles={availableSubtitles}
       selectedSubtitle={selectedSubtitle}
       currentSubtitleText={currentSubtitleText}
+      subtitleSettings={subtitleSettings}
+      onSubtitleSettingsChange={handleSubtitleSettingsChange}
       
       // Settings state
       showSettingsPopup={showSettingsPopup}
