@@ -4,20 +4,20 @@ export const animeSources = [
   {
     id: 'zenime-1',
     name: 'hd-1',
-    subUrl: '/embed/zenime/{urlepisodeId}/hd-1/sub',
-    dubUrl: '/embed/zenime/{urlepisodeId}/hd-1/dub'
+    subUrl: '/e/zenime/{urlepisodeId}/hd-1/sub',
+    dubUrl: '/e/zenime/{urlepisodeId}/hd-1/dub'
   },
   {
     id: 'zenime-2',
     name: 'hd-2',
-    subUrl: '/embed/zenime/{urlepisodeId}/hd-2/sub',
-    dubUrl: '/embed/zenime/{urlepisodeId}/hd-2/dub'
+    subUrl: '/e/zenime/{urlepisodeId}/hd-2/sub',
+    dubUrl: '/e/zenime/{urlepisodeId}/hd-2/dub'
   },
   {
     id: 'zenime-3',
     name: 'hd-3',
-    subUrl: '/embed/zenime/{urlepisodeId}/hd-3/sub',
-    dubUrl: '/embed/zenime/{urlepisodeId}/hd-3/dub'
+    subUrl: '/e/zenime/{urlepisodeId}/hd-3/sub',
+    dubUrl: '/e/zenime/{urlepisodeId}/hd-3/dub'
   },
   {
     id: 'animepahe',

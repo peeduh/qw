@@ -78,7 +78,8 @@ export const initializeVideo = async (videoUrl, videoRef, hlsRef, setError, setA
               width: level.width,
               bitrate: level.bitrate,
               quality: level.height ? `${level.height}p` : 'Unknown',
-              url: level.url
+              name: level.height ? `${level.height}p` : 'Unknown',
+              url: level.url || videoUrl
             }));
             
             qualities.sort((a, b) => b.height - a.height);
@@ -256,55 +257,117 @@ export const changePlaybackSpeed = (speed, videoRef) => {
 };
 
 export const changeQuality = (quality, hlsRef, videoRef, currentTime) => {
-  if (!hlsRef.current || !quality) return;
+  if (!quality || !videoRef.current) return;
 
-  const hls = hlsRef.current;
+  const preserveTime = currentTime || 0;
+  const preservePlayState = videoRef.current && !videoRef.current.paused;
   
-  hls.currentLevel = quality.index;
-  
-  if (videoRef.current && currentTime) {
-    const preserveTime = currentTime;
-    const preservePlayState = !videoRef.current.paused;
+  // If we have HLS and a valid quality index, try to change level
+  if (hlsRef.current && quality.index !== -1 && quality.index !== undefined) {
+    const hls = hlsRef.current;
     
+    hls.currentLevel = quality.index;
+    
+    // Preserve playback position and state
+    if (preserveTime > 0) {
+      const handleLoadedData = () => {
+        videoRef.current.currentTime = preserveTime;
+        if (preservePlayState) {
+          videoRef.current.play().catch(console.error);
+        }
+        videoRef.current.removeEventListener('loadeddata', handleLoadedData);
+      };
+      
+      videoRef.current.addEventListener('loadeddata', handleLoadedData);
+    }
+  } 
+  else if (quality.url && quality.url !== videoRef.current.src) {
+    // For different quality URLs, we need to reload the source
     const handleLoadedData = () => {
-      videoRef.current.currentTime = preserveTime;
+      if (preserveTime > 0) {
+        videoRef.current.currentTime = preserveTime;
+      }
       if (preservePlayState) {
-        videoRef.current.play();
+        videoRef.current.play().catch(console.error);
       }
       videoRef.current.removeEventListener('loadeddata', handleLoadedData);
     };
     
     videoRef.current.addEventListener('loadeddata', handleLoadedData);
+    
+    // If we have HLS, load the new source
+    if (hlsRef.current) {
+      hlsRef.current.loadSource(quality.url);
+    } else {
+      videoRef.current.src = quality.url;
+    }
   }
 };
 
-export const extractQualitiesFromM3U8 = async (m3u8Url) => {
+export const extractQualitiesFromM3U8 = async (m3u8Url, createProxyUrl, headers = {}) => {
   try {
+    console.log('Fetching M3U8 from:', m3u8Url);
     const response = await fetch(m3u8Url);
     const m3u8Text = await response.text();
+    console.log('M3U8 content preview:', m3u8Text.substring(0, 500));
     
     const qualities = [];
     const lines = m3u8Text.split('\n');
     
     for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
+      const line = lines[i].trim();
+      
       if (line.startsWith('#EXT-X-STREAM-INF:')) {
         const resolutionMatch = line.match(/RESOLUTION=(\d+)x(\d+)/);
         const bandwidthMatch = line.match(/BANDWIDTH=(\d+)/);
+        const frameRateMatch = line.match(/FRAME-RATE=([\d.]+)/);
         
-        if (resolutionMatch && lines[i + 1]) {
+        // Look for the next non-empty, non-comment line
+        let url = null;
+        for (let j = i + 1; j < lines.length; j++) {
+          const nextLine = lines[j].trim();
+          if (nextLine && !nextLine.startsWith('#')) {
+            url = nextLine;
+            break;
+          }
+        }
+        
+        if (resolutionMatch && url) {
           const width = parseInt(resolutionMatch[1]);
           const height = parseInt(resolutionMatch[2]);
           const bandwidth = bandwidthMatch ? parseInt(bandwidthMatch[1]) : 0;
-          const url = lines[i + 1].trim();
+          const frameRate = frameRateMatch ? parseFloat(frameRateMatch[1]) : null;
           
-          qualities.push({ index: qualities.length, width, height, bitrate: bandwidth, quality: `${height}p`, url: url.startsWith('http') ? url : new URL(url, m3u8Url).href });
+          let finalUrl = url;
+          
+          if (!url.startsWith('http')) {
+            const baseUrl = m3u8Url.split('/').slice(0, -1).join('/');
+            const fullUrl = `${baseUrl}/${url}`;
+            finalUrl = createProxyUrl ? createProxyUrl(fullUrl, headers) : fullUrl;
+          }
+          else if (createProxyUrl) {
+            finalUrl = createProxyUrl(url, headers);
+          }
+          
+          qualities.push({ 
+            index: qualities.length, 
+            width, 
+            height, 
+            bitrate: bandwidth, 
+            frameRate,
+            quality: `${height}p`, 
+            name: `${height}p`,
+            url: finalUrl 
+          });
+          
+          console.log(`Found quality: ${height}p (${width}x${height}) - ${finalUrl}`);
         }
       }
     }
     
     qualities.sort((a, b) => b.height - a.height);
     
+    console.log('Final extracted qualities:', qualities);
     return qualities;
   } catch (error) {
     console.error('Error extracting qualities from M3U8:', error);

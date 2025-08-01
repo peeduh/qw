@@ -11,9 +11,11 @@ import Search from './pages/Search.jsx';
 import Ios from './pages/misc/Ios.jsx';
 import PrimeNet from './pages/embeds/primenet.jsx';
 import Fox from './pages/embeds/fox.jsx';
+import Zenime from './pages/embeds/zenime.jsx';
 import AnimeHome from './pages/anime/home.jsx';
 import AnimeDetails from './pages/anime/details.jsx';
 import AnimeSearch from './pages/anime/search.jsx';
+import NotFound from './pages/404.jsx';
 
 export default function App() {
   return (
@@ -36,6 +38,8 @@ export default function App() {
         <Route path="/e/primenet/:tmdbid/:season/:episode" element={<PrimeNet />} />
         <Route path="/e/fox/:tmdbid" element={<Fox />} />
         <Route path="/e/fox/:tmdbid/:season/:episode" element={<Fox />} />
+        <Route path="/e/zenime/:episodeId/:server/:type" element={<Zenime />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
       <Toaster 
         position="bottom-center"
