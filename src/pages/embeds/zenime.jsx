@@ -29,12 +29,15 @@ const Zenime = () => {
   let { episodeId, server, type } = useParams();
   episodeId = decodeURIComponent(episodeId);
   
+  const isIframeMode = window.location.search.includes('iframe=1');
+  
   const [videoUrl, setVideoUrl] = useState('');
   const [originalM3U8Url, setOriginalM3U8Url] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [qualityOptions, setQualityOptions] = useState([]);
   const [selectedQuality, setSelectedQuality] = useState(null);
+  const [iframeUrl, setIframeUrl] = useState('');
   
   const [showCaptionsPopup, setShowCaptionsPopup] = useState(false);
   const [subtitlesEnabled, setSubtitlesEnabled] = useState(false);
@@ -63,6 +66,17 @@ const Zenime = () => {
         const zenimeData = await zenimeResponse.json();
         
         if (!zenimeData.success || !zenimeData.results) { throw new Error('Failed to load video data'); }
+        
+        // iframe mode
+        if (isIframeMode) {
+          if (!zenimeData.results.streamingLink || !zenimeData.results.streamingLink.iframe) {
+            throw new Error('Sorry, we couldn\'t find a video');
+          }
+          
+          setIframeUrl(zenimeData.results.streamingLink.iframe);
+          setLoading(false);
+          return;
+        }
         
         if (!zenimeData.results.streamingLink || 
             Array.isArray(zenimeData.results.streamingLink) && zenimeData.results.streamingLink.length === 0 ||
@@ -247,7 +261,7 @@ const Zenime = () => {
   if (error) {
     return (
       <div 
-        className="flex h-screen w-full items-center justify-center text-4xl font-medium tracking-[-0.015em] text-text-primary px-[10%] text-center" 
+        className="flex h-screen w-full items-center justify-center text-4xl font-medium tracking-[-0.015em] text-white px-[10%] text-center" 
         style={{fontFamily: 'Inter'}}
       >
         {error}
@@ -259,6 +273,21 @@ const Zenime = () => {
     return (
       <div className="fixed top-0 left-0 w-screen h-screen bg-black flex items-center justify-center">
         <div className="text-white text-lg">Loading video...</div>
+      </div>
+    );
+  }
+
+  // iframe for iframe mode
+  if (isIframeMode && iframeUrl) {
+    return (
+      <div className="fixed top-0 left-0 w-screen h-screen">
+        <iframe
+          src={iframeUrl}
+          className="w-full h-full border-0"
+          allowFullScreen
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          title="Video Player"
+        />
       </div>
     );
   }

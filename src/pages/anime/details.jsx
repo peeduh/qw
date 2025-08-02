@@ -25,6 +25,10 @@ export default function AnimeDetails() {
 
   useEffect(() => {
     document.body.style.backgroundColor = 'var(--color-anime-background)';
+    // Reset state when navigating to a new anime
+    setEpisodeThumbnails({});
+    thumbnailsLoaded.current = false;
+    loadedSeasons.current.clear();
     loadAnimeData();
   }, [id]);
 
@@ -86,12 +90,6 @@ export default function AnimeDetails() {
   const loadAnimeData = async () => {
     try {
       setLoading(true);
-      
-      // Check if we already loaded this season
-      if (loadedSeasons.current.has(id)) {
-        setLoading(false);
-        return;
-      }
 
       const [animeInfo, episodesList] = await Promise.all([
         fetchAnimeInfo(id),
@@ -125,7 +123,7 @@ export default function AnimeDetails() {
   };
 
   const handleSeasonChange = async (seasonRoute) => {
-    if (!seasonRoute || seasonRoute === '' || loadedSeasons.current.has(seasonRoute)) return;
+    if (!seasonRoute || seasonRoute === '') return;
     
     try {
       setEpisodesLoading(true);
@@ -172,7 +170,7 @@ export default function AnimeDetails() {
   };
 
   const fetchSeasonSpecificTmdbData = async (seasonAnimeData, episodes) => {
-    if (!seasonAnimeData?.title || !episodes?.length || thumbnailsLoaded.current) return;
+    if (!seasonAnimeData?.title || !episodes?.length) return;
 
     try {
       console.log('Fetching season-specific TMDB data for:', seasonAnimeData.title);

@@ -4,3 +4,6 @@ embeds (+ player)
 - zenime if it works
 
 https://errie369djj.com/play/imdbid (referer: https://vegamovies.bh/)
+
+use https://github.com/martinsik/langs-flags-list as a fallback incase there is no flag for the subtitle language
+make changing the anime (via search) and changing the season updates the episodes area (titles, thumbnails, descriptions)

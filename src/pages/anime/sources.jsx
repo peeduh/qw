@@ -20,16 +20,10 @@ export const animeSources = [
     dubUrl: '/e/zenime/{urlepisodeId}/hd-3/dub'
   },
   {
-    id: 'animepahe',
-    name: 'pahe',
-    subUrl: '/embed/animepahe/{urlepisodeId}/{name}/{season}/{episode}',
-    dubUrl: '/embed/animepahe/{urlepisodeId}/{name}/{season}/{episode}'
-  },
-  {
-    id: 'aniplay', // not working
-    name: 'hika',
-    subUrl: '/embed/aniplay/{urlepisodeId}/{episode}/sub',
-    dubUrl: '/embed/aniplay/{urlepisodeId}/{episode}/dub'
+    id: 'vidstreaming',
+    name: 'vidstream',
+    subUrl: '/e/zenime/{urlepisodeId}/vidstreaming/sub?iframe=1',
+    dubUrl: '/e/zenime/{urlepisodeId}/vidstreaming/dub?iframe=1'
   },
   {
     id: 'megaplaybz-1',
@@ -51,12 +45,12 @@ export function getSourceUrl(sourceId, language, episodeData, animeData) {
 
   return template
     .replace('{epid}',        episodeData.epid)
-    .replace('{episodeId}',   episodeData.episodeid || '')
+    .replace('{episodeId}',   episodeData.episodeid || episodeData.epid || '')
     .replace('{urlepisodeId}', encodeURIComponent(episodeData.episodeid || ''))
     .replace('{tmdbId}',      animeData.tmdbId || '')
     .replace('{season}',      animeData.season   || '1')
     .replace('{episode}',     episodeData.episode_no)
-    .replace('{name}',     encodeURIComponent(animeData.name));
+    .replace('{name}',     encodeURIComponent(animeData.name || animeData.title || ''));
 }
 
 export function getDefaultSource() {
