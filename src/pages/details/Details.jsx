@@ -4,6 +4,7 @@ import { fetchTmdb, getTmdbImage, formatReleaseDate, getContentRating, isInWatch
 import { Download, Play, ThumbsUp, Plus, Info } from 'lucide-react';
 import { toast } from 'sonner';
 import Header from '../../components/Header.jsx';
+import Footer from '../../components/Footer.jsx';
 import { SpotlightSkeleton, CategorySkeleton } from '../../components/Skeletons.jsx';
 import { EpisodeCard, TrailerCard, CastCard, MediaCard, SeasonDropdown } from './Cards.jsx';
 import Watch from './Watch.jsx';
@@ -43,7 +44,7 @@ const SpotlightSection = ({ item, mediaType, isLoading, onWatchClick, onDownload
       {/* Content container */}
       <div className="relative z-10 p-4 md:p-8 pb-0 w-full md:pr-0 md:text-left text-center">
         {logoImage ? (
-          <img src={getTmdbImage(logoImage)} className="w-[80%] md:max-h-72 max-w-sm min-w-[13rem] mb-4 animate-fade-in-delayed mx-auto md:mx-0" alt={item.title || item.name} />
+          <img src={getTmdbImage(logoImage)} className="md:max-h-56 max-w-sm min-w-[13rem] mb-4 animate-fade-in-delayed mx-auto md:mx-0" alt={item.title || item.name} />
         ) : (
           <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold text-white mb-4 w-full md:w-[24rem] animate-fade-in-delayed">
             {item.title || item.name}
@@ -393,10 +394,12 @@ const Details = () => {
             )}
             
             {/* More Like This */}
-            <CategorySection title="More Like This" items={recommendations} isLoading={isLoading} renderItem={(item) => <MediaCard item={item} />} />
+            <CategorySection title="More Like This" items={recommendations} isLoading={isLoading} renderItem={(item) => <MediaCard item={item} variant="horizontal" />} />
           </>
         )}
       </div>
+      
+      <Footer />
       
       {/* Watch Modal */}
       <Watch 

@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { fetchTmdb } from '../utils.jsx';
 import CarouselItem from '../components/carouselItem.jsx';
 import Header from '../components/Header.jsx';
+import Footer from '../components/Footer.jsx';
 import { SearchSkeleton } from '../components/Skeletons.jsx';
 import { Search as SearchIcon } from 'lucide-react';
 
@@ -129,6 +130,8 @@ const Search = () => {
           </div>
         )}
       </div>
+      
+      <Footer />
     </div>
   );
 };

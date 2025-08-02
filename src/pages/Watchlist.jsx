@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { fetchTmdb, getWatchlist, removeFromWatchlist } from '../utils.jsx';
 import CarouselItem from '../components/carouselItem.jsx';
 import Header from '../components/Header.jsx';
+import Footer from '../components/Footer.jsx';
 import { SpotlightSkeleton } from '../components/Skeletons.jsx';
 import { X } from 'lucide-react';
 
@@ -111,6 +112,8 @@ const Watchlist = () => {
           </div>
         )}
       </div>
+      
+      <Footer />
     </div>
   );
 };

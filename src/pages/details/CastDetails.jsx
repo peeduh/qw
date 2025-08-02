@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { fetchTmdb, getTmdbImage, formatReleaseDate } from '../../utils.jsx';
 import { ArrowLeft, Calendar, MapPin, Star, ExternalLink } from 'lucide-react';
 import Header from '../../components/Header.jsx';
+import Footer from '../../components/Footer.jsx';
 import { SpotlightSkeleton, CategorySkeleton } from '../../components/Skeletons.jsx';
 import { MediaCard } from './Cards.jsx';
 
@@ -259,6 +260,8 @@ const CastDetails = () => {
           </div>
         )}
       </div>
+      
+      <Footer />
     </div>
   );
 };
