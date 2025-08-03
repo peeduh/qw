@@ -34,8 +34,7 @@ const Watch = ({ isOpen, onClose, onUpdateUrl, mediaType, tmdbId, season = 1, ep
     'Resident',
     'Videasy',
     'VidLink',
-     'VidFast',
-     'Primenet',
+    'VidFast',
     'VidsrcXYZ',
     'VidsrcSU',
   ];

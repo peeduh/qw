@@ -1,7 +1,8 @@
 import React from 'react';
-import { PlaySolid, PauseSolid, SoundOffSolid, SoundLowSolid, SoundHighSolid, Expand, Collapse } from 'iconoir-react';
+import { PlaySolid, PauseSolid, SoundOffSolid, SoundLowSolid, SoundHighSolid, Expand, Collapse, ServerSolid } from 'iconoir-react';
 import SubtitleManager from './subtitles';
 import SettingsManager from './settings';
+import SourcesManager from './sources';
 import { formatTime } from './helpers';
 import { isMobileDevice } from '../../utils';
 
@@ -73,6 +74,12 @@ const PlayerTemplate = ({
   availableQualities,
   selectedQuality,
   qualitiesLoading,
+  
+  // Source management state
+  showSourcesPopup,
+  setShowSourcesPopup,
+  usedSource,
+  onSourceChange,
   
   // Event handlers
   onMouseMove,
@@ -208,6 +215,18 @@ const PlayerTemplate = ({
               onSubtitleSettingsChange={onSubtitleSettingsChange}
               container={isFullscreen ? playerRef.current : undefined}
             />
+
+            {usedSource && (
+              <>
+                <SourcesManager
+                  showSourcesPopup={showSourcesPopup}
+                  setShowSourcesPopup={setShowSourcesPopup}
+                  currentSource={usedSource}
+                  onSourceChange={onSourceChange}
+                  container={isFullscreen ? playerRef.current : undefined}
+                />
+              </>
+            )}
 
             <SettingsManager
               showSettingsPopup={showSettingsPopup}

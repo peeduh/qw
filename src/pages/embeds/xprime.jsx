@@ -4,12 +4,14 @@ import config from '../../config.json';
 import { searchSubtitles } from 'wyzie-lib';
 import VideoPlayer from '../../components/player/main';
 
-const PrimeNet = () => {
+const Xprime = () => {
   const { tmdbid, season, episode } = useParams();
   const [videoUrl, setVideoUrl] = useState('');
-  const [originalM3U8Url, setOriginalM3U8Url] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [usedSource, setUsedSource] = useState('');
+  const [sourceIndex, setSourceIndex] = useState(1); // Default to Fox source index
+  const [manualSourceOverride, setManualSourceOverride] = useState(null); // Manual source selection
   
   // Subtitle states
   const [showCaptionsPopup, setShowCaptionsPopup] = useState(false);
@@ -22,29 +24,89 @@ const PrimeNet = () => {
 
   const mediaType = season && episode ? 'tv' : 'movie';
 
+  const fetchVideoFromSource = async (sourceName) => {
+    // Create Fox API request
+    const foxParams = {
+      id: tmdbid
+    };
+    
+    if (season && episode) {
+      foxParams.season = season;
+      foxParams.episode = episode;
+    }
+    
+    if (sourceName === 'Fox') {
+      const foxApiUrl = new URL('https://backend.xprime.tv/fox');
+      Object.keys(foxParams).forEach(key => foxApiUrl.searchParams.append(key, foxParams[key]));
+      
+      const response = await fetch(foxApiUrl);
+      if (!response.ok) throw new Error(`Fox API error! status: ${response.status}`);
+      const data = await response.json();
+      if (!data.url) throw new Error('No video URL found in Fox response');
+      return {
+        source: 'fox',
+        url: data.url,
+        headers: {'origin': 'https://xprime.tv'},
+        sourceIndex: 1
+      };
+    } else if (sourceName === 'PrimeNet') {
+      let primenetApiUrl;
+      if (season && episode) {
+        primenetApiUrl = `https://backend.xprime.tv/primenet?id=${tmdbid}&season=${season}&episode=${episode}`;
+      } else {
+        primenetApiUrl = `https://backend.xprime.tv/primenet?id=${tmdbid}`;
+      }
+      
+      const response = await fetch(primenetApiUrl);
+      if (!response.ok) throw new Error(`PrimeNet API error! status: ${response.status}`);
+      const data = await response.json();
+      if (!data.url) throw new Error('No video URL found in PrimeNet response');
+      return {
+        source: 'primenet',
+        url: data.url,
+        headers: {'referer': 'https://xprime.tv/'},
+        sourceIndex: 0
+      };
+    }
+  };
+
   useEffect(() => {
     const fetchVideoUrl = async () => {
       try {
         setLoading(true);
         setError('');
+        setUsedSource('');
         
-        let apiUrl;
-        if (season && episode) { apiUrl = `https://backend.xprime.tv/primenet?id=${tmdbid}&season=${season}&episode=${episode}`; }
-        else { apiUrl = `https://backend.xprime.tv/primenet?id=${tmdbid}`; }
+        let result;
         
-        const response = await fetch(apiUrl);
-        if (!response.ok) { throw new Error(`HTTP error! status: ${response.status}`); }
-        const data = await response.json();
-        if (!data.url) { throw new Error('No video URL found in response'); }
+        if (manualSourceOverride && manualSourceOverride !== 'Auto') {
+          // manual source
+          result = await fetchVideoFromSource(manualSourceOverride);
+        } else {
+          // automatic source
+          const foxPromise = fetchVideoFromSource('Fox');
+          const primenetPromise = fetchVideoFromSource('PrimeNet');
+          
+          // get the first successful response
+          result = await Promise.any([foxPromise, primenetPromise]);
+        }
         
-        setOriginalM3U8Url(data.url);
+        console.log(`Using ${result.source} source for video`);
+        setUsedSource(result.source);
+        setSourceIndex(result.sourceIndex);
         
-        const proxiedUrl = `${config.m3u8proxy}/m3u8-proxy?url=${encodeURIComponent(data.url)}&headers=${encodeURIComponent(JSON.stringify({'referer': 'https://xprime.tv/'}))}`;
+        const proxiedUrl = `${config.m3u8proxy}/m3u8-proxy?url=${encodeURIComponent(result.url)}&headers=${encodeURIComponent(JSON.stringify(result.headers))}`;
         setVideoUrl(proxiedUrl);
         
       } catch (err) {
-        console.error(err);
-        setError(err.message || 'Failed to load video');
+        console.error('Video source failed:', err);
+        if (err.errors) {
+          // Promise.any failed - all promises rejected
+          const errorMessages = err.errors.map(e => e.message).join(', ');
+          setError(`All sources failed: ${errorMessages}`);
+        } else {
+          setError(err.message || 'Failed to load video from selected source');
+        }
       } finally {
         setLoading(false);
       }
@@ -53,7 +115,7 @@ const PrimeNet = () => {
     if (tmdbid) {
       fetchVideoUrl();
     }
-  }, [tmdbid, season, episode]);
+  }, [tmdbid, season, episode, manualSourceOverride]);
 
   useEffect(() => {
     const fetchSubtitles = async () => {
@@ -180,7 +242,6 @@ const PrimeNet = () => {
   return (
     <VideoPlayer
       videoUrl={videoUrl}
-      originalM3U8Url={originalM3U8Url}
       onError={setError}
       showCaptionsPopup={showCaptionsPopup}
       setShowCaptionsPopup={setShowCaptionsPopup}
@@ -191,14 +252,16 @@ const PrimeNet = () => {
       selectedSubtitle={selectedSubtitle}
       onSelectSubtitle={selectSubtitle}
       subtitleCues={subtitleCues}
-      // Progress tracking props
       mediaId={tmdbid}
       mediaType={mediaType}
       season={season ? parseInt(season) : 0}
       episode={episode ? parseInt(episode) : 0}
-      sourceIndex={0} // PrimeNet source index
+      sourceIndex={sourceIndex}
+      usedSource={usedSource}
+      manualSourceOverride={manualSourceOverride}
+      setManualSourceOverride={setManualSourceOverride}
     />
   );
 };
 
-export default PrimeNet;
+export default Xprime;

@@ -6,8 +6,8 @@ import { isMobileDevice } from '../../utils';
 
 const VideoPlayer = ({ 
   videoUrl, 
-  originalVideoUrl,
   onError, 
+
   showCaptionsPopup, 
   setShowCaptionsPopup, 
   subtitlesEnabled, 
@@ -17,14 +17,20 @@ const VideoPlayer = ({
   selectedSubtitle, 
   onSelectSubtitle, 
   subtitleCues, 
+
   availableQualities: externalQualities,
   selectedQuality: externalSelectedQuality,
   onQualityChange: externalOnQualityChange,
+
   mediaId, 
   mediaType, 
   season = 0, 
   episode = 0, 
-  sourceIndex = 0 
+  
+  sourceIndex = 0,
+  usedSource,
+  manualSourceOverride,
+  setManualSourceOverride
 }) => {
   // Video state
   const [isPlaying, setIsPlaying] = useState(false);
@@ -61,6 +67,9 @@ const VideoPlayer = ({
   const [availableQualities, setAvailableQualities] = useState([]);
   const [selectedQuality, setSelectedQuality] = useState(null);
   const [qualitiesLoading, setQualitiesLoading] = useState(false);
+  
+  // Source management state
+  const [showSourcesPopup, setShowSourcesPopup] = useState(false);
   
   // Progress tracking state
   const [progressLoaded, setProgressLoaded] = useState(false);
@@ -585,6 +594,14 @@ const VideoPlayer = ({
     saveProgressNow();
   };
 
+  // Source management handlers
+  const handleSourceChange = (source) => {
+    if (setManualSourceOverride) {
+      setManualSourceOverride(source.name);
+      saveProgressNow();
+    }
+  };
+
   // Handle global keyboard events
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -718,6 +735,12 @@ const VideoPlayer = ({
       availableQualities={finalAvailableQualities}
       selectedQuality={finalSelectedQuality}
       qualitiesLoading={qualitiesLoading}
+      
+      // Source management state
+      showSourcesPopup={showSourcesPopup}
+        setShowSourcesPopup={setShowSourcesPopup}
+        usedSource={usedSource}
+        onSourceChange={handleSourceChange}
       
       // Event handlers
       onMouseMove={handleMouseMove}

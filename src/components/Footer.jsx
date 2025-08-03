@@ -12,7 +12,7 @@ const Footer = () => {
             varunaditya-plus
           </a>
         </span><br/>
-        <span className='text-sm block mt-1.5 text-neutral-400'>QuickWatch is <a href='/os' className='underline'>open source</a></span>
+        <span className='text-sm block mt-1.5 text-neutral-400'>QuickWatch is <a href='/opensource' className='underline'>open source</a></span>
       </div>
     </footer>
   );
