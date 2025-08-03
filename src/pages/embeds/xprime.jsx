@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import config from '../../config.json';
 import { searchSubtitles } from 'wyzie-lib';
 import VideoPlayer from '../../components/player/main';
+import { initializeSourceTracking } from '../../components/progress';
 
 const Xprime = () => {
   const { tmdbid, season, episode } = useParams();
@@ -23,6 +24,7 @@ const Xprime = () => {
   const [subtitleCues, setSubtitleCues] = useState([]);
 
   const mediaType = season && episode ? 'tv' : 'movie';
+  const sourceTrackingCleanupRef = useRef(null);
 
   const fetchVideoFromSource = async (sourceName) => {
     // Create Fox API request
@@ -98,6 +100,21 @@ const Xprime = () => {
         const proxiedUrl = `${config.m3u8proxy}/m3u8-proxy?url=${encodeURIComponent(result.url)}&headers=${encodeURIComponent(JSON.stringify(result.headers))}`;
         setVideoUrl(proxiedUrl);
         
+        // Initialize source tracking
+        if (sourceTrackingCleanupRef.current) {
+          sourceTrackingCleanupRef.current();
+        }
+        
+        sourceTrackingCleanupRef.current = initializeSourceTracking(
+          null,
+          result.source,
+          tmdbid,
+          mediaType,
+          season || 0,
+          episode || 0,
+          result.sourceIndex
+        );
+        
       } catch (err) {
         console.error('Video source failed:', err);
         if (err.errors) {
@@ -115,6 +132,12 @@ const Xprime = () => {
     if (tmdbid) {
       fetchVideoUrl();
     }
+    
+    return () => {
+      if (sourceTrackingCleanupRef.current) {
+        sourceTrackingCleanupRef.current();
+      }
+    };
   }, [tmdbid, season, episode, manualSourceOverride]);
 
   useEffect(() => {
