@@ -16,6 +16,7 @@ import AnimeDetails from './pages/anime/details.jsx';
 import AnimeSearch from './pages/anime/search.jsx';
 import NotFound from './pages/404.jsx';
 import OpenSource from './pages/OpenSource.jsx';
+import QuickSearch from './components/QuickSearch.jsx';
 
 export default function App() {
   return (
@@ -40,6 +41,7 @@ export default function App() {
         <Route path="/opensource" element={<OpenSource />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
+      <QuickSearch />
       <Toaster 
         position="bottom-center"
         theme="dark"
