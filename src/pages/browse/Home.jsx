@@ -88,7 +88,7 @@ const SpotlightSection = ({ item, isLoading }) => {
           <span className="text-white text-sm font-medium">
             Press <kbd className="bg-white/20 px-1.5 py-0.5 rounded text-xs">Ctrl+G</kbd> to quickly search movies/tv from anywhere
           </span>
-          <span className="absolute -top-2 -right-2.5 bg-white text-[11px] px-1 pt-[0.05rem] rounded-[0.2rem] rotate-12 text-black font-medium">BETA</span>
+          <span className="absolute -top-2 -right-2.5 bg-white text-[11px] px-1 pt-[0.05rem] rounded-[0.2rem] rotate-12 text-black font-medium">NEW</span>
         </div>
       </div>
 

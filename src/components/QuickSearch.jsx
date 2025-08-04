@@ -66,9 +66,18 @@ const QuickSearch = () => {
 
   // Focus input when opened
   useEffect(() => {
-    if (isOpen && inputRef.current) {
-      setTimeout(() => inputRef.current.focus(), 100);
+    if (isOpen) {
+      // Lock body scroll
+      document.body.style.overflow = 'hidden';
+      if (inputRef.current) {
+        setTimeout(() => inputRef.current.focus(), 100);
+      }
+    } else {
+      // Restore body scroll
+      document.body.style.overflow = 'unset';
     }
+
+    return () => { document.body.style.overflow = 'unset' };
   }, [isOpen]);
 
   // Debounced search
@@ -125,48 +134,57 @@ const QuickSearch = () => {
     setSelectedIndex(-1);
   };
 
+  const handleBackgroundClick = (e) => {
+    if (e.target === e.currentTarget) { handleClose(); }
+  };
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 bg-black/50 backdrop-blur-sm">
+    <div 
+      className="fixed inset-0 z-50 flex items-start justify-center pt-20 bg-black/50 backdrop-blur-sm"
+      onClick={handleBackgroundClick}
+    >
       <div className="w-full max-w-2xl mx-4">
-        <div className="bg-[#141415] border border-white/10 rounded-lg shadow-2xl overflow-hidden">
-          <div className="flex items-center px-4 py-3 border-b border-white/10">
-            <SearchIcon className="w-5 h-5 text-white/60 mr-3" />
+        <div className="mb-4">
+          <div className="bg-white/10 border border-white/20 rounded-full px-4 py-2 flex items-center gap-2 shadow-lg">
+            <SearchIcon className="w-4 h-4 text-white" />
             <input
               ref={inputRef}
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search for movies and TV shows..."
-              className="flex-1 bg-transparent text-white text-lg placeholder-white/60 focus:outline-none"
+              className="flex-1 bg-transparent text-white text-sm font-medium placeholder-white/60 focus:outline-none"
             />
             <button
               onClick={handleClose}
-              className="ml-3 p-1 text-white/60 hover:text-white transition-colors"
+              className="p-1 text-white/60 hover:text-white transition-colors"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
           </div>
-          
-          <div ref={resultsRef} className="max-h-96 overflow-y-auto">
+        </div>
+        
+        {(searchResults.length > 0 || isLoading || (searchQuery.trim() && !isLoading)) && (
+          <div ref={resultsRef} className="overflow-y-auto space-y-2 rounded-xl" style={{ maxHeight: 'calc(100vh - 550px)' }}>
             {isLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+              <div className="bg-white/10 border border-white/20 rounded-xl px-4 py-4">
+                <div className="flex items-center justify-center">
+                  <div className="animate-spin rounded-xl h-6 w-6 border-b-2 border-white"></div>
+                </div>
               </div>
             ) : searchResults.length > 0 ? (
-              <div className="py-2">
-                {searchResults.map((item, index) => (
-                  <div
-                    key={item.id}
-                    onClick={() => handleItemClick(item)}
-                    className={`flex items-center px-4 py-3 cursor-pointer transition-colors ${
-                      index === selectedIndex 
-                        ? 'bg-white/10' 
-                        : 'hover:bg-white/5'
-                    }`}
-                  >
-                    <div className="w-12 h-16 mr-4 flex-shrink-0">
+              searchResults.map((item, index) => (
+                <div
+                  key={item.id}
+                  onClick={() => handleItemClick(item)}
+                  className={`bg-white/10 border border-white/20 rounded-xl px-4 py-3 cursor-pointer transition-all hover:bg-white/15 shadow-lg ${
+                    index === selectedIndex ? 'bg-white/20 border-white/30' : ''
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-14 flex-shrink-0">
                       <img
                         src={
                           item.poster_path
@@ -178,10 +196,10 @@ const QuickSearch = () => {
                       />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-white font-medium truncate">
+                      <h3 className="text-white font-medium text-sm truncate">
                         {item.title || item.name}
                       </h3>
-                      <p className="text-white/60 text-sm">
+                      <p className="text-white/60 text-xs">
                         {item.media_type === 'movie' ? 'Movie' : 'TV Show'}
                         {item.release_date || item.first_air_date ? (
                           <span className="ml-2">
@@ -190,28 +208,26 @@ const QuickSearch = () => {
                         ) : null}
                       </p>
                       {item.overview && (
-                        <p className="text-white/40 text-xs mt-1 line-clamp-2">
-                          {item.overview.length > 100 
-                            ? `${item.overview.substring(0, 100)}...` 
+                        <p className="text-white/40 text-xs mt-1 line-clamp-1">
+                          {item.overview.length > 80 
+                            ? `${item.overview.substring(0, 80)}...` 
                             : item.overview
                           }
                         </p>
                       )}
                     </div>
                   </div>
-                ))}
-              </div>
+                </div>
+              ))
             ) : searchQuery.trim() && !isLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <p className="text-white/60">No results found</p>
+              <div className="bg-white/10 border border-white/20 rounded-xl px-4 py-4">
+                <div className="flex items-center justify-center">
+                  <p className="text-white/60 text-sm">No results found</p>
+                </div>
               </div>
-            ) : (
-              <div className="flex items-center justify-center py-8">
-                <p className="text-white/60">Start typing to search...</p>
-              </div>
-            )}
+            ) : null}
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
