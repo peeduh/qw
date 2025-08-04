@@ -8,6 +8,7 @@ const QuickSearch = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [showResults, setShowResults] = useState(false);
 
   const inputRef = useRef(null);
   const resultsRef = useRef(null);
@@ -27,6 +28,7 @@ const QuickSearch = () => {
         setIsOpen(true);
         setSearchQuery('');
         setSearchResults([]);
+        setShowResults(false);
       }
       
       // Close with Escape
@@ -34,6 +36,7 @@ const QuickSearch = () => {
         setIsOpen(false);
         setSearchQuery('');
         setSearchResults([]);
+        setShowResults(false);
       }
     };
 
@@ -61,6 +64,7 @@ const QuickSearch = () => {
   useEffect(() => {
     if (!searchQuery.trim()) {
       setSearchResults([]);
+      setShowResults(false);
       return;
     }
 
@@ -76,6 +80,7 @@ const QuickSearch = () => {
 
     try {
       setIsLoading(true);
+      setShowResults(false);
       const searchRoute = `/search/multi?query=${encodeURIComponent(query)}&language=en-US&page=1`;
       const data = await fetchTmdb(searchRoute);
       
@@ -85,9 +90,15 @@ const QuickSearch = () => {
         .slice(0, 20);
       
       setSearchResults(filteredResults);
+      
+      // Trigger animation
+      if (filteredResults.length > 0) {
+        setTimeout(() => setShowResults(true), 50);
+      }
     } catch (err) {
       console.error('Error searching:', err);
       setSearchResults([]);
+      setShowResults(false);
     } finally {
       setIsLoading(false);
     }
@@ -99,12 +110,14 @@ const QuickSearch = () => {
     setIsOpen(false);
     setSearchQuery('');
     setSearchResults([]);
+    setShowResults(false);
   };
 
   const handleClose = () => {
     setIsOpen(false);
     setSearchQuery('');
     setSearchResults([]);
+    setShowResults(false);
   };
 
   const handleBackgroundClick = (e) => {
@@ -144,12 +157,17 @@ const QuickSearch = () => {
             {searchResults.length > 0 ? (
               searchResults.map((item, index) => (
                 <div key={item.id} onClick={() => handleItemClick(item)}
-                  className="relative overflow-hidden rounded-xl cursor-pointer transition duration-300 ease shadow-lg hover:brightness-125 hover:scale-[1.025]"
+                  className={`relative overflow-hidden rounded-xl cursor-pointer transition-all duration-500 ease-out shadow-lg hover:brightness-125 hover:scale-[1.025] ${
+                    showResults 
+                      ? 'opacity-100 translate-y-0 scale-100' 
+                      : 'opacity-0 translate-y-4 scale-95'
+                  }`}
                   style={{
                     backgroundImage: item.backdrop_path ? `linear-gradient(to right, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0.4) 100%), url(https://image.tmdb.org/t/p/w780${item.backdrop_path})` : 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
-                    backgroundRepeat: 'no-repeat'
+                    backgroundRepeat: 'no-repeat',
+                    transitionDelay: showResults ? `${index * 50}ms` : '0ms'
                   }}
                 >
                   <div className="absolute left-4 top-1/2 transform -translate-y-1/2 h-32 overflow-hidden rotate-3 shadow-xl z-20">
@@ -191,7 +209,9 @@ const QuickSearch = () => {
                 </div>
               ))
             ) : searchQuery.trim() ? (
-              <div className="bg-white/10 border border-white/20 rounded-xl px-5 py-5">
+              <div className={`bg-white/10 border border-white/20 rounded-xl px-5 py-5 transition-all duration-300 ease-out ${
+                !isLoading ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
+              }`}>
                 <div className="flex items-center justify-center">
                   <p className="text-white/60 text-base font-medium">No results found</p>
                 </div>
