@@ -10,10 +10,14 @@ const SettingsManager = ({
   playbackSpeed, 
   onSpeedChange, 
   qualitiesLoading,
-  container 
+  container,
+  volumeBoost = 0,
+  onVolumeBoostChange
 }) => {
   const speedOptions = [0.25, 0.5, 0.75, 0.9, 1, 1.1, 1.25, 1.5, 2];
   const currentSpeedIndex = speedOptions.indexOf(playbackSpeed);
+  
+  const maxVolumeBoost = 300;
 
   const handleKeyDown = (e) => {
     if (e.key === ' ' || e.key === 'Spacebar') {
@@ -29,8 +33,20 @@ const SettingsManager = ({
     }
   };
 
+  const handleVolumeBoostChange = (e) => {
+    const newBoost = parseInt(e.target.value);
+    if (onVolumeBoostChange) {
+      onVolumeBoostChange(newBoost);
+    }
+  };
+
   const getSpeedLabel = (speed) => {
     return speed === 1 ? '1x' : `${speed}x`;
+  };
+
+  const getVolumeBoostLabel = (boost) => {
+    if (boost === 0) return 'Off';
+    return `+${boost}%`;
   };
 
   return (
@@ -84,6 +100,29 @@ const SettingsManager = ({
                 <span>¼x</span>
                 <span>1x</span>
                 <span>2x</span>
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-white/80 mb-2">
+                Boost Volume: {getVolumeBoostLabel(volumeBoost)}
+              </label>
+              <input
+                type="range"
+                min="0"
+                max={maxVolumeBoost}
+                step="25"
+                value={volumeBoost}
+                onChange={handleVolumeBoostChange}
+                className="w-full h-2 bg-white/20 rounded-lg appearance-none cursor-pointer slider"
+                style={{
+                  background: `linear-gradient(to right, white 0%, white ${(volumeBoost / maxVolumeBoost) * 100}%, rgba(255,255,255,0.2) ${(volumeBoost / maxVolumeBoost) * 100}%, rgba(255,255,255,0.2) 100%)`
+                }}
+              />
+              <div className="flex justify-between text-xs text-white/60 mt-1">
+                <span>Off</span>
+                <span>+150%</span>
+                <span>+300%</span>
               </div>
             </div>
 

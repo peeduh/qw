@@ -74,6 +74,8 @@ const PlayerTemplate = ({
   availableQualities,
   selectedQuality,
   qualitiesLoading,
+  volumeBoost,
+  onVolumeBoostChange,
   
   // Source management state
   showSourcesPopup,
@@ -237,6 +239,8 @@ const PlayerTemplate = ({
               playbackSpeed={playbackSpeed}
               onSpeedChange={onSpeedChange}
               qualitiesLoading={qualitiesLoading}
+              volumeBoost={volumeBoost}
+              onVolumeBoostChange={onVolumeBoostChange}
               container={isFullscreen ? playerRef.current : undefined}
             />
 

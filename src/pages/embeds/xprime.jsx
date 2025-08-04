@@ -48,7 +48,7 @@ const Xprime = () => {
       return {
         source: 'fox',
         url: data.url,
-        headers: {'origin': 'https://xprime.tv'},
+        headers: {'origin': 'https://xprime.tv', 'referer': 'https://xprime.tv/'},
         sourceIndex: 1
       };
     } else if (sourceName === 'PrimeNet') {
@@ -66,7 +66,7 @@ const Xprime = () => {
       return {
         source: 'primenet',
         url: data.url,
-        headers: {'referer': 'https://xprime.tv/'},
+        headers: {'origin': 'https://xprime.tv', 'referer': 'https://xprime.tv/'},
         sourceIndex: 0
       };
     }

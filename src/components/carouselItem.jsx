@@ -42,7 +42,7 @@ const CarouselItem = ({ item, variant = 'default', episodeNumber, usePoster = fa
   
 
   const shouldShowImage = !hideImages && totalEpisodes <= 100 && imagePath;
-  if (!imagePath) return null;
+  if (!imagePath && variant !== 'episode') return null;
   
   const isUsingPosterFallback = !usePoster && (
     (!detailedItem.images?.backdrops || detailedItem.images.backdrops.length === 0) &&

@@ -10,6 +10,20 @@ export const formatTime = (time) => {
   }
 };
 
+export const fetchM3U8Data = async (proxiedUrl) => {
+  try {
+    const response = await fetch(proxiedUrl, {
+      method: 'GET',
+      headers: { 'Accept': 'application/vnd.apple.mpegurl, application/x-mpegURL, text/plain' }
+    });
+    
+    if (!response.ok) { throw new Error(`Failed fetching M3U8 data: ${response.status} ${response.statusText}`); }
+    
+    const m3u8Data = await response.text();
+    return m3u8Data;
+  } catch (error) { throw error }
+};
+
 export const initializeVideo = async (videoUrl, videoRef, hlsRef, setError, setAvailableQualities) => {
   if (!videoUrl || !videoRef.current) return;
 
@@ -88,12 +102,54 @@ export const initializeVideo = async (videoUrl, videoRef, hlsRef, setError, setA
           }
         });
 
-        hls.loadSource(videoUrl);
-        hls.attachMedia(videoRef.current);
+        if (videoUrl.includes('m3u8-proxy')) {
+          try {
+            const m3u8Data = await fetchM3U8Data(videoUrl);
+            
+            const blob = new Blob([m3u8Data], { type: 'application/vnd.apple.mpegurl' });
+            const blobUrl = URL.createObjectURL(blob);
+            
+            hls.loadSource(blobUrl);
+            hls.attachMedia(videoRef.current);
+            
+            setTimeout(() => {
+              URL.revokeObjectURL(blobUrl);
+            }, 10000);
+            
+          } catch (error) {
+            hls.loadSource(videoUrl);
+            hls.attachMedia(videoRef.current);
+          }
+        } else {
+          hls.loadSource(videoUrl);
+          hls.attachMedia(videoRef.current);
+        }
         
       } else if (videoRef.current.canPlayType('application/vnd.apple.mpegurl')) {
         // Native HLS support (Safari)
-        videoRef.current.src = videoUrl;
+        if (videoUrl.includes('m3u8-proxy')) {
+          try {
+            const m3u8Data = await fetchM3U8Data(videoUrl);
+            const blob = new Blob([m3u8Data], { type: 'application/vnd.apple.mpegurl' });
+            const blobUrl = URL.createObjectURL(blob);
+            
+            videoRef.current.src = blobUrl;
+            
+            const handleLoadedData = () => {
+              setTimeout(() => {
+                URL.revokeObjectURL(blobUrl);
+              }, 1000);
+              videoRef.current.removeEventListener('loadeddata', handleLoadedData);
+            };
+            videoRef.current.addEventListener('loadeddata', handleLoadedData);
+            
+          } catch (error) {
+            videoRef.current.src = videoUrl;
+          }
+        } else {
+          videoRef.current.src = videoUrl;
+        }
+        
         // For native HLS, we can't extract quality levels easily
         if (setAvailableQualities) {
           setAvailableQualities([]);
@@ -256,7 +312,7 @@ export const changePlaybackSpeed = (speed, videoRef) => {
   }
 };
 
-export const changeQuality = (quality, hlsRef, videoRef, currentTime) => {
+export const changeQuality = async (quality, hlsRef, videoRef, currentTime) => {
   if (!quality || !videoRef.current) return;
 
   const preserveTime = currentTime || 0;
@@ -297,9 +353,49 @@ export const changeQuality = (quality, hlsRef, videoRef, currentTime) => {
     
     // If we have HLS, load the new source
     if (hlsRef.current) {
-      hlsRef.current.loadSource(quality.url);
+      if (quality.url.includes('m3u8-proxy')) {
+        try {
+          const m3u8Data = await fetchM3U8Data(quality.url);
+          
+          const blob = new Blob([m3u8Data], { type: 'application/vnd.apple.mpegurl' });
+          const blobUrl = URL.createObjectURL(blob);
+          
+          hlsRef.current.loadSource(blobUrl);
+          
+          setTimeout(() => {
+            URL.revokeObjectURL(blobUrl);
+          }, 10000);
+          
+        } catch (error) {
+          hlsRef.current.loadSource(quality.url);
+        }
+      } else {
+        hlsRef.current.loadSource(quality.url);
+      }
     } else {
-      videoRef.current.src = quality.url;
+      // native HLS support
+      if (quality.url.includes('m3u8-proxy')) {
+        try {
+          const m3u8Data = await fetchM3U8Data(quality.url);
+          const blob = new Blob([m3u8Data], { type: 'application/vnd.apple.mpegurl' });
+          const blobUrl = URL.createObjectURL(blob);
+          
+          videoRef.current.src = blobUrl;
+          
+          const handleLoadedDataCleanup = () => {
+            setTimeout(() => {
+              URL.revokeObjectURL(blobUrl);
+            }, 1000);
+            videoRef.current.removeEventListener('loadeddata', handleLoadedDataCleanup);
+          };
+          videoRef.current.addEventListener('loadeddata', handleLoadedDataCleanup);
+          
+        } catch (error) {
+          videoRef.current.src = quality.url;
+        }
+      } else {
+        videoRef.current.src = quality.url;
+      }
     }
   }
 };

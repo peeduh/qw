@@ -430,7 +430,7 @@ export default function AnimeDetails() {
                             : 'bg-anime-card-bg'
                         } border border-anime-border/10 rounded-lg px-2 py-1 text-center text-sm cursor-pointer hover:bg-anime-card-hover transition duration-200 active:scale-90`}
                       >
-                        {source.name}
+                        {source}
                       </button>
                     ))}
                   </div>

@@ -67,6 +67,7 @@ const VideoPlayer = ({
   const [availableQualities, setAvailableQualities] = useState([]);
   const [selectedQuality, setSelectedQuality] = useState(null);
   const [qualitiesLoading, setQualitiesLoading] = useState(false);
+  const [volumeBoost, setVolumeBoost] = useState(0);
   
   // Source management state
   const [showSourcesPopup, setShowSourcesPopup] = useState(false);
@@ -84,6 +85,11 @@ const VideoPlayer = ({
   const progressSaveTimeoutRef = useRef(null);
   const volumeTimeoutRef = useRef(null);
   const volumeSliderRef = useRef(null);
+  
+  // Web Audio API refs for volume boost
+  const audioContextRef = useRef(null);
+  const gainNodeRef = useRef(null);
+  const sourceNodeRef = useRef(null);
 
   useEffect(() => {
     if (mediaId && mediaType) {
@@ -200,6 +206,18 @@ const VideoPlayer = ({
     };
   }, [videoUrl, mediaId, mediaType, season, episode, sourceIndex]);
 
+  // Cleanup audio context on unmount
+  useEffect(() => {
+    return () => {
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+        audioContextRef.current = null;
+        gainNodeRef.current = null;
+        sourceNodeRef.current = null;
+      }
+    };
+  }, []);
+
   // Initialize video when videoUrl changes
   useEffect(() => {
     setIsVideoLoading(true);
@@ -221,7 +239,10 @@ const VideoPlayer = ({
   useEffect(() => {
     const cleanup = setupVideoEventListeners(videoRef, setCurrentTime, setDuration, setIsPlaying, setVolume, setIsMuted, setIsPictureInPicture, setBufferedAmount);
     
-    const handleCanPlay = () => { setIsVideoLoading(false); };
+    const handleCanPlay = () => { 
+      setIsVideoLoading(false);
+      setupAudioContext();
+    };
     const handleWaiting = () => { setIsVideoLoading(true); };
     const handleLoadStart = () => { setIsVideoLoading(true); };
     const handleSeeking = () => { setIsVideoLoading(true); };
@@ -584,20 +605,57 @@ const VideoPlayer = ({
     saveProgressNow();
   };
 
-  const handleQualityChange = (quality) => {
+  const handleQualityChange = async (quality) => {
     if (externalOnQualityChange) {
       externalOnQualityChange(quality);
     } else {
       setSelectedQuality(quality);
-      changeQuality(quality, hlsRef, videoRef, currentTime);
+      await changeQuality(quality, hlsRef, videoRef, currentTime);
     }
     saveProgressNow();
+  };
+
+  const handleVolumeBoostChange = (boost) => {
+    setVolumeBoost(boost);
+    applyVolumeBoost(boost);
+    saveProgressNow();
+  };
+
+  // Setup Web Audio API for volume boost
+  const setupAudioContext = () => {
+    if (!videoRef.current || audioContextRef.current) return;
+
+    try {
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const source = audioContext.createMediaElementSource(videoRef.current);
+      const gainNode = audioContext.createGain();
+
+      source.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+
+      audioContextRef.current = audioContext;
+      gainNodeRef.current = gainNode;
+      sourceNodeRef.current = source;
+
+      // Apply current volume boost
+      applyVolumeBoost(volumeBoost);
+    } catch (error) {
+      console.error('Failed to setup audio context for volume boost:', error);
+    }
+  };
+
+  const applyVolumeBoost = (boost) => {
+    if (gainNodeRef.current) {
+      // Convert percentage to gain multiplier (0% = 1x, 100% = 2x, 300% = 4x)
+      const gainValue = 1 + (boost / 100);
+      gainNodeRef.current.gain.setValueAtTime(gainValue, audioContextRef.current.currentTime);
+    }
   };
 
   // Source management handlers
   const handleSourceChange = (source) => {
     if (setManualSourceOverride) {
-      setManualSourceOverride(source.name);
+      setManualSourceOverride(source);
       saveProgressNow();
     }
   };
@@ -735,12 +793,14 @@ const VideoPlayer = ({
       availableQualities={finalAvailableQualities}
       selectedQuality={finalSelectedQuality}
       qualitiesLoading={qualitiesLoading}
+      volumeBoost={volumeBoost}
+      onVolumeBoostChange={handleVolumeBoostChange}
       
       // Source management state
       showSourcesPopup={showSourcesPopup}
-        setShowSourcesPopup={setShowSourcesPopup}
-        usedSource={usedSource}
-        onSourceChange={handleSourceChange}
+      setShowSourcesPopup={setShowSourcesPopup}
+      usedSource={usedSource}
+      onSourceChange={handleSourceChange}
       
       // Event handlers
       onMouseMove={handleMouseMove}
