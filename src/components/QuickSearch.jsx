@@ -8,7 +8,7 @@ const QuickSearch = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedIndex, setSelectedIndex] = useState(-1);
+
   const inputRef = useRef(null);
   const resultsRef = useRef(null);
   const navigate = useNavigate();
@@ -27,7 +27,6 @@ const QuickSearch = () => {
         setIsOpen(true);
         setSearchQuery('');
         setSearchResults([]);
-        setSelectedIndex(-1);
       }
       
       // Close with Escape
@@ -35,34 +34,12 @@ const QuickSearch = () => {
         setIsOpen(false);
         setSearchQuery('');
         setSearchResults([]);
-        setSelectedIndex(-1);
-      }
-      
-      // Navigate results with arrow keys
-      if (isOpen && searchResults.length > 0) {
-        if (e.key === 'ArrowDown') {
-          e.preventDefault();
-          setSelectedIndex(prev => 
-            prev < searchResults.length - 1 ? prev + 1 : 0
-          );
-        }
-        if (e.key === 'ArrowUp') {
-          e.preventDefault();
-          setSelectedIndex(prev => 
-            prev > 0 ? prev - 1 : searchResults.length - 1
-          );
-        }
-        if (e.key === 'Enter' && selectedIndex >= 0) {
-          e.preventDefault();
-          const selectedItem = searchResults[selectedIndex];
-          handleItemClick(selectedItem);
-        }
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, searchResults, selectedIndex, location.pathname]);
+  }, [isOpen, searchResults, location.pathname]);
 
   // Focus input when opened
   useEffect(() => {
@@ -84,7 +61,6 @@ const QuickSearch = () => {
   useEffect(() => {
     if (!searchQuery.trim()) {
       setSearchResults([]);
-      setSelectedIndex(-1);
       return;
     }
 
@@ -109,7 +85,6 @@ const QuickSearch = () => {
         .slice(0, 20);
       
       setSearchResults(filteredResults);
-      setSelectedIndex(-1);
     } catch (err) {
       console.error('Error searching:', err);
       setSearchResults([]);
@@ -124,14 +99,12 @@ const QuickSearch = () => {
     setIsOpen(false);
     setSearchQuery('');
     setSearchResults([]);
-    setSelectedIndex(-1);
   };
 
   const handleClose = () => {
     setIsOpen(false);
     setSearchQuery('');
     setSearchResults([]);
-    setSelectedIndex(-1);
   };
 
   const handleBackgroundClick = (e) => {
@@ -145,9 +118,9 @@ const QuickSearch = () => {
       className="fixed inset-0 z-50 flex items-start justify-center pt-20 bg-black/50 backdrop-blur-sm"
       onClick={handleBackgroundClick}
     >
-      <div className="w-full max-w-2xl mx-4">
+      <div className="w-full max-w-3xl mx-4">
         <div className="mb-4">
-          <div className="bg-white/10 border border-white/20 rounded-full px-4 py-2 flex items-center gap-2 shadow-lg">
+          <div className="bg-white/10 border border-white/20 rounded-full px-4 py-2 mx-2 flex items-center gap-2 shadow-lg">
             <SearchIcon className="w-4 h-4 text-white" />
             <input
               ref={inputRef}
@@ -159,70 +132,68 @@ const QuickSearch = () => {
             />
             <button
               onClick={handleClose}
-              className="p-1 text-white/60 hover:text-white transition-colors"
+              className="p-1 text-white/60 hover:text-white transition"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
         </div>
         
-        {(searchResults.length > 0 || isLoading || (searchQuery.trim() && !isLoading)) && (
-          <div ref={resultsRef} className="overflow-y-auto space-y-2 rounded-xl" style={{ maxHeight: 'calc(100vh - 550px)' }}>
-            {isLoading ? (
-              <div className="bg-white/10 border border-white/20 rounded-xl px-4 py-4">
-                <div className="flex items-center justify-center">
-                  <div className="animate-spin rounded-xl h-6 w-6 border-b-2 border-white"></div>
-                </div>
-              </div>
-            ) : searchResults.length > 0 ? (
+        {(searchResults.length > 0 || (searchQuery.trim() && !isLoading)) && (
+          <div ref={resultsRef} className="overflow-y-auto space-y-2 rounded-xl p-2" style={{ maxHeight: 'calc(100vh - 550px)' }}>
+            {searchResults.length > 0 ? (
               searchResults.map((item, index) => (
-                <div
-                  key={item.id}
-                  onClick={() => handleItemClick(item)}
-                  className={`bg-white/10 border border-white/20 rounded-xl px-4 py-3 cursor-pointer transition-all hover:bg-white/15 shadow-lg ${
-                    index === selectedIndex ? 'bg-white/20 border-white/30' : ''
-                  }`}
+                <div key={item.id} onClick={() => handleItemClick(item)}
+                  className="relative overflow-hidden rounded-xl cursor-pointer transition duration-300 ease shadow-lg hover:brightness-125 hover:scale-[1.025]"
+                  style={{
+                    backgroundImage: item.backdrop_path ? `linear-gradient(to right, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0.4) 100%), url(https://image.tmdb.org/t/p/w780${item.backdrop_path})` : 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    backgroundRepeat: 'no-repeat'
+                  }}
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-14 flex-shrink-0">
-                      <img
-                        src={
-                          item.poster_path
-                            ? `https://image.tmdb.org/t/p/w92${item.poster_path}`
-                            : `https://placehold.co/92x138/141414/fff/?text=${encodeURIComponent(item.title || item.name || 'Unknown')}&font=poppins`
-                        }
-                        alt={item.title || item.name}
-                        className="w-full h-full object-cover rounded"
-                      />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-white font-medium text-sm truncate">
-                        {item.title || item.name}
-                      </h3>
-                      <p className="text-white/60 text-xs">
-                        {item.media_type === 'movie' ? 'Movie' : 'TV Show'}
-                        {item.release_date || item.first_air_date ? (
-                          <span className="ml-2">
-                            {new Date(item.release_date || item.first_air_date).getFullYear()}
-                          </span>
-                        ) : null}
-                      </p>
-                      {item.overview && (
-                        <p className="text-white/40 text-xs mt-1 line-clamp-1">
-                          {item.overview.length > 80 
-                            ? `${item.overview.substring(0, 80)}...` 
-                            : item.overview
+                  <div className="absolute left-4 top-1/2 transform -translate-y-1/2 h-32 overflow-hidden rotate-3 shadow-xl z-20">
+                    <img
+                      src={
+                        item.poster_path
+                          ? `https://image.tmdb.org/t/p/w185${item.poster_path}`
+                          : `https://placehold.co/185x278/141414/fff/?text=${encodeURIComponent(item.title || item.name || 'Unknown')}&font=poppins`
+                      }
+                      alt={item.title || item.name}
+                      className="w-full h-full object-cover transform scale-110"
+                    />
+                  </div>
+                  
+                  <div className="relative z-10 bg-black/30 backdrop-blur-sm px-5 py-4 rounded-xl">
+                    <div className="flex items-center gap-4">
+                      <div className="w-20 flex-shrink-0"></div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-white font-semibold text-base truncate drop-shadow-sm">
+                          {item.title || item.name}
+                        </h3>
+                        <p className="text-white/70 text-sm font-medium">
+                          {item.media_type === 'movie' ? 'Movie' : 'TV Show'}
+                          {item.release_date || item.first_air_date ? (
+                            <span className="ml-2 text-white/60">
+                              {new Date(item.release_date || item.first_air_date).getFullYear()}
+                            </span>
+                          ) : null}
+                        </p>
+                        <p className="text-white/50 text-sm mt-1 line-clamp-2 min-h-[2.5em] drop-shadow-sm">
+                          {item.overview 
+                            ? item.overview
+                            : 'No description'
                           }
                         </p>
-                      )}
+                      </div>
                     </div>
                   </div>
                 </div>
               ))
-            ) : searchQuery.trim() && !isLoading ? (
-              <div className="bg-white/10 border border-white/20 rounded-xl px-4 py-4">
+            ) : searchQuery.trim() ? (
+              <div className="bg-white/10 border border-white/20 rounded-xl px-5 py-5">
                 <div className="flex items-center justify-center">
-                  <p className="text-white/60 text-sm">No results found</p>
+                  <p className="text-white/60 text-base font-medium">No results found</p>
                 </div>
               </div>
             ) : null}
