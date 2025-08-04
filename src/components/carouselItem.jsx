@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Play, Timer, Plus } from 'lucide-react';
 import { getTmdbImage, fetchTmdb, calculateProgressPercent, getRemainingTime, getImagePath, hasEnglishBackdrop, getLogoPath, isInWatchlist, toggleWatchlist } from '../utils.jsx';
 
-const CarouselItem = ({ item, variant = 'default', episodeNumber, usePoster = false }) => {
+const CarouselItem = ({ item, variant = 'default', episodeNumber, usePoster = false, hideImages = false, totalEpisodes = 0 }) => {
   const navigate = useNavigate();
   const [detailedItem, setDetailedItem] = useState(item);
   const [loading, setLoading] = useState(true);
@@ -39,6 +39,9 @@ const CarouselItem = ({ item, variant = 'default', episodeNumber, usePoster = fa
   }, [item]);
   
   const imagePath = usePoster ? (detailedItem.poster_path || item.poster_path) : getImagePath(detailedItem, item);
+  
+
+  const shouldShowImage = !hideImages && totalEpisodes <= 100 && imagePath;
   if (!imagePath) return null;
   
   const isUsingPosterFallback = !usePoster && (
@@ -69,24 +72,43 @@ const CarouselItem = ({ item, variant = 'default', episodeNumber, usePoster = fa
     
     return (
       <div className="cursor-pointer transition-all duration-300 hover:scale-105">
-        <div className={`relative rounded-lg overflow-hidden bg-cover bg-center shadow-lg ${usePoster ? 'aspect-[2/3] w-40 md:w-auto' : 'aspect-video'}`}
-             style={{ backgroundImage: `url(${getTmdbImage(imagePath, 'w500')})` }}>
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-          
-          {showOverlay && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              {logoPath ? (<img src={getTmdbImage(logoPath, 'w300')} alt={title} className="w-[70%] max-h-[60%] object-contain drop-shadow-[0_4px_8px_#000]" />
-              ) : (<h2 className="text-white text-3xl font-medium text-center px-4 drop-shadow-[0_4px_8px_#000]">{title}</h2>)}
-            </div>
-          )}
-          
-          <div className="absolute bottom-0 left-0 right-0 p-3">
-            <div className="flex items-center gap-2 text-white">
-              <Play className="w-4 h-4" fill="currentColor" />
-              <span className="text-sm font-medium">Play now</span>
+        {shouldShowImage ? (
+          <div className={`relative rounded-lg overflow-hidden bg-cover bg-center shadow-lg ${usePoster ? 'aspect-[2/3] w-40 md:w-auto' : 'aspect-video'}`}
+               style={{ backgroundImage: `url(${getTmdbImage(imagePath, 'w500')})` }}>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+            
+            {showOverlay && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                {logoPath ? (<img src={getTmdbImage(logoPath, 'w300')} alt={title} className="w-[70%] max-h-[60%] object-contain drop-shadow-[0_4px_8px_#000]" />
+                ) : (<h2 className="text-white text-3xl font-medium text-center px-4 drop-shadow-[0_4px_8px_#000]">{title}</h2>)}
+              </div>
+            )}
+            
+            <div className="absolute bottom-0 left-0 right-0 p-3">
+              <div className="flex items-center gap-2 text-white">
+                <Play className="w-4 h-4" fill="currentColor" />
+                <span className="text-sm font-medium">Play now</span>
+              </div>
             </div>
           </div>
-        </div>
+        ) : (
+          <div className={`relative rounded-lg overflow-hidden shadow-lg bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700 ${usePoster ? 'aspect-[2/3] w-40 md:w-auto' : 'aspect-video'}`}>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-center p-4">
+                <Play className="w-8 h-8 text-white/70 mx-auto mb-2" fill="currentColor" />
+                <h2 className="text-white text-lg font-medium mb-1">Episode {episodeNumber}</h2>
+                <p className="text-gray-400 text-sm">No thumbnail available</p>
+              </div>
+            </div>
+            
+            <div className="absolute bottom-0 left-0 right-0 p-3">
+              <div className="flex items-center gap-2 text-white">
+                <Play className="w-4 h-4" fill="currentColor" />
+                <span className="text-sm font-medium">Play now</span>
+              </div>
+            </div>
+          </div>
+        )}
         <div className="mt-3">
           <p className="text-gray-400 text-sm mb-1">Episode {episodeNumber}</p>
           <h3 className="text-white text-lg font-medium mb-2 line-clamp-2">{title}</h3>

@@ -121,7 +121,7 @@ const SpotlightSection = ({ item, mediaType, isLoading, onWatchClick, onDownload
   );
 };
 
-const CategorySection = ({ title, items, isLoading: categoryLoading, renderItem, layout = 'horizontal', headerComponent }) => {
+const CategorySection = ({ title, items, isLoading: categoryLoading, renderItem, layout = 'horizontal', headerComponent, episodeCount = 0 }) => {
   const [visibleItems, setVisibleItems] = useState(layout === 'grid' ? (title === 'Episodes' ? items.length : 8) : (title === 'Cast & Crew' ? items.length : 4));
   const [isLoading, setIsLoading] = useState(false);
   const scrollContainerRef = React.useRef(null);
@@ -142,9 +142,17 @@ const CategorySection = ({ title, items, isLoading: categoryLoading, renderItem,
     }
   };
 
+  const getAnimationDelay = (index) => {
+    if (title !== 'Episodes') return index * 100;
+    
+    const baseDelay = 100;
+    const speedMultiplier = Math.max(0.2, 1 - (episodeCount > 25 ? Math.min((episodeCount - 25) / 75, 0.8) : 0));
+    return index * (baseDelay * speedMultiplier);
+  };
+
   const displayedItems = items.slice(0, visibleItems);
 
-  if (categoryLoading) { return <CategorySkeleton title={title} />; }
+  if (categoryLoading) { return <CategorySkeleton title={title} episodeCount={episodeCount} />; }
   if (!items.length) { return null; }
 
   return (
@@ -156,7 +164,7 @@ const CategorySection = ({ title, items, isLoading: categoryLoading, renderItem,
       {layout === 'grid' ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 py-4">
           {displayedItems.map((item, index) => (
-            <div key={item.uniqueId || item.id || index} className="animate-stagger" style={{animationDelay: `${index * 100}ms`}}>
+            <div key={item.uniqueId || item.id || index} className="animate-stagger" style={{animationDelay: `${getAnimationDelay(index)}ms`}}>
               {renderItem(item, index)}
             </div>
           ))}
@@ -173,7 +181,7 @@ const CategorySection = ({ title, items, isLoading: categoryLoading, renderItem,
           onScroll={handleScroll}
         >
           {displayedItems.map((item, index) => (
-            <div key={item.uniqueId || item.id || index} className="animate-stagger" style={{animationDelay: `${index * 100}ms`}}>
+            <div key={item.uniqueId || item.id || index} className="animate-stagger" style={{animationDelay: `${getAnimationDelay(index)}ms`}}>
               {renderItem(item, index)}
             </div>
           ))}
@@ -354,30 +362,45 @@ const Details = () => {
           <>
             {/* Episodes Section (TV Shows only) */}
             {mediaType === 'tv' && seasons.length > 0 && (
-              <CategorySection title="Episodes" items={episodes} isLoading={episodesLoading} layout="grid" headerComponent={
+              <CategorySection 
+                title="Episodes" 
+                items={episodes} 
+                isLoading={episodesLoading} 
+                layout="grid" 
+                episodeCount={selectedSeason?.episode_count || episodes.length}
+                headerComponent={
                   <SeasonDropdown seasons={seasons.filter(s => s.season_number > 0)} selectedSeason={selectedSeason} onSeasonChange={handleSeasonChange} />
                 }
-                renderItem={(episode) => (
-                  <div 
-                    onClick={() => {
-                      const seasonNum = selectedSeason?.season_number || 1;
-                      const episodeNum = episode.episode_number;
-                      setWatchData({ 
-                        season: seasonNum, 
-                        episode: episodeNum,
-                        name: episode.name || ''
-                      });
-                      const newParams = new URLSearchParams(searchParams);
-                      newParams.set('watch', '1');
-                      newParams.set('season', seasonNum.toString());
-                      newParams.set('episode', episodeNum.toString());
-                      setSearchParams(newParams);
-                    }}
-                    className="cursor-pointer"
-                  >
-                    <EpisodeCard episode={episode} />
-                  </div>
-                )}
+                renderItem={(episode) => {
+                  const totalEpisodes = selectedSeason?.episode_count || episodes.length;
+                  const hideImages = totalEpisodes > 100;
+                  
+                  return (
+                    <div 
+                      onClick={() => {
+                        const seasonNum = selectedSeason?.season_number || 1;
+                        const episodeNum = episode.episode_number;
+                        setWatchData({ 
+                          season: seasonNum, 
+                          episode: episodeNum,
+                          name: episode.name || ''
+                        });
+                        const newParams = new URLSearchParams(searchParams);
+                        newParams.set('watch', '1');
+                        newParams.set('season', seasonNum.toString());
+                        newParams.set('episode', episodeNum.toString());
+                        setSearchParams(newParams);
+                      }}
+                      className="cursor-pointer"
+                    >
+                      <EpisodeCard 
+                        episode={episode} 
+                        hideImages={hideImages}
+                        totalEpisodes={totalEpisodes}
+                      />
+                    </div>
+                  );
+                }}
               />
             )}
             

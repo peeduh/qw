@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "../../components/ui/dropdown-menu";
 
-export const EpisodeCard = ({ episode }) => {
+export const EpisodeCard = ({ episode, hideImages = false, totalEpisodes = 0 }) => {
   const episodeItem = {
     id: episode.id,
     name: episode.name,
@@ -25,6 +25,8 @@ export const EpisodeCard = ({ episode }) => {
         item={episodeItem} 
         variant="episode" 
         episodeNumber={episode.episode_number}
+        hideImages={hideImages}
+        totalEpisodes={totalEpisodes}
       />
     </div>
   );
