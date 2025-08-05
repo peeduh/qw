@@ -7,9 +7,8 @@ import cloudscraper
 import re
 
 app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": "*"}})
+CORS(app, resources={r"/*": {"origins": ["http://localhost:5173", "http://localhost:5174", "https://quickwatch.co", "http://192.168.1.8:5173"]}})
 
-# Configure requests session with retry strategy and connection pooling
 session = requests.Session()
 retry_strategy = Retry(
     total=3,
