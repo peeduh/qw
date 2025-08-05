@@ -21,7 +21,7 @@ adapter = HTTPAdapter(max_retries=retry_strategy, pool_connections=10, pool_maxs
 session.mount("http://", adapter)
 session.mount("https://", adapter)
 
-@app.route('/api/proxy', methods=['POST'])
+@app.route('/', methods=['POST'])
 def proxy():
     try:
         data = request.get_json()

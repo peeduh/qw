@@ -53,7 +53,7 @@ const Zenime = () => {
         setLoading(true);
         setError('');
         
-        const zenimeResponse = await fetch(`${config.proxy}/api/proxy`, {
+        const zenimeResponse = await fetch(config.proxy, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -102,7 +102,7 @@ const Zenime = () => {
               .filter(track => track.kind === 'captions' || track.kind === 'subtitles')
               .map(async (track) => {
                 try {
-                  const subtitleResponse = await fetch(`${config.proxy}/api/proxy`, {
+                  const subtitleResponse = await fetch(config.proxy, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -227,7 +227,7 @@ const Zenime = () => {
       if (subtitle.content) {
         subtitleText = subtitle.content;
       } else if (subtitle.url) {
-        const response = await fetch(`${config.proxy}/api/proxy`, {
+        const response = await fetch(config.proxy, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

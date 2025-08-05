@@ -157,13 +157,17 @@ const QuickSearch = () => {
             {searchResults.length > 0 ? (
               searchResults.map((item, index) => (
                 <div key={item.id} onClick={() => handleItemClick(item)}
-                  className={`relative overflow-hidden rounded-xl cursor-pointer transition-all duration-500 ease-out shadow-lg hover:brightness-125 hover:scale-[1.025] ${
+                  className={`relative overflow-hidden rounded-xl cursor-pointer transition-all duration-200 ease-out shadow-lg hover:brightness-125 hover:scale-[1.015] ${
                     showResults 
                       ? 'opacity-100 translate-y-0 scale-100' 
                       : 'opacity-0 translate-y-4 scale-95'
                   }`}
                   style={{
-                    backgroundImage: item.backdrop_path ? `linear-gradient(to right, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0.4) 100%), url(https://image.tmdb.org/t/p/w780${item.backdrop_path})` : 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
+                    backgroundImage: item.backdrop_path 
+                      ? `linear-gradient(to right, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0.4) 100%), url(https://image.tmdb.org/t/p/w780${item.backdrop_path})`
+                      : item.poster_path
+                        ? `linear-gradient(to right, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0.4) 100%), url(https://image.tmdb.org/t/p/w780${item.poster_path})`
+                        : 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                     backgroundRepeat: 'no-repeat',
@@ -209,7 +213,7 @@ const QuickSearch = () => {
                 </div>
               ))
             ) : searchQuery.trim() ? (
-              <div className={`bg-white/10 border border-white/20 rounded-xl px-5 py-5 transition-all duration-300 ease-out ${
+              <div className={`bg-white/10 border border-white/20 rounded-xl px-5 py-5 transition-all duration-200 ease-out ${
                 !isLoading ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
               }`}>
                 <div className="flex items-center justify-center">
