@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Play, Timer, Plus } from 'lucide-react';
 import { getTmdbImage, fetchTmdb, calculateProgressPercent, getRemainingTime, getImagePath, hasEnglishBackdrop, getLogoPath, isInWatchlist, toggleWatchlist } from '../utils.jsx';
 
 const CarouselItem = ({ item, variant = 'default', episodeNumber, usePoster = false, hideImages = false, totalEpisodes = 0 }) => {
-  const navigate = useNavigate();
   const [detailedItem, setDetailedItem] = useState(item);
   const [loading, setLoading] = useState(true);
   const [inWatchlist, setInWatchlist] = useState(false);
@@ -55,10 +53,9 @@ const CarouselItem = ({ item, variant = 'default', episodeNumber, usePoster = fa
   const runtime = detailedItem.runtime ? `${Math.floor(detailedItem.runtime / 60)}h ${detailedItem.runtime % 60}m` : 
                   detailedItem.number_of_seasons ? `${detailedItem.number_of_seasons} seasons` : '';
   
-  const handleClick = () => {
-    if (variant === 'continue' && mediaType === 'tv' && item.season && item.episode) { navigate(`/tv/${item.id}?season=${item.season}&episode=${item.episode}`); }
-    else { navigate(`/${mediaType}/${item.id}`); }
-  };
+  const linkUrl = variant === 'continue' && mediaType === 'tv' && item.season && item.episode 
+    ? `/tv/${item.id}?season=${item.season}&episode=${item.episode}` 
+    : `/${mediaType}/${item.id}`;
   
   const handleWatchlistToggle = (e) => {
     e.stopPropagation();
@@ -71,7 +68,7 @@ const CarouselItem = ({ item, variant = 'default', episodeNumber, usePoster = fa
     const showOverlay = !hasEnglishBackdrop(detailedItem);
     
     return (
-      <div className="cursor-pointer transition-all duration-300 hover:scale-105">
+      <a href={linkUrl} className="block transition-all duration-300 hover:scale-105">
         {shouldShowImage ? (
           <div className={`relative rounded-lg overflow-hidden bg-cover bg-center shadow-lg ${usePoster ? 'aspect-[2/3] w-40 md:w-auto' : 'aspect-video'}`}
                style={{ backgroundImage: `url(${getTmdbImage(imagePath, 'w500')})` }}>
@@ -114,7 +111,7 @@ const CarouselItem = ({ item, variant = 'default', episodeNumber, usePoster = fa
           <h3 className="text-white text-lg font-medium mb-2 line-clamp-2">{title}</h3>
           <p className="text-white text-sm line-clamp-3 leading-relaxed">{item.overview || detailedItem.overview}</p>
         </div>
-      </div>
+      </a>
     );
   }
   
@@ -132,11 +129,11 @@ const CarouselItem = ({ item, variant = 'default', episodeNumber, usePoster = fa
     const showOverlay = !hasEnglishBackdrop(detailedItem);
     
     return (
-      <div className="flex-shrink-0 w-40 md:w-96 cursor-pointer animate-scale-in">
-        <div 
-          className={`relative rounded-lg overflow-hidden transition-all duration-300 hover:scale-105 hover:z-10 bg-cover bg-center ${usePoster ? 'aspect-[2/3] w-40 md:w-auto' : 'aspect-video'}`}
+      <div className="flex-shrink-0 w-40 md:w-96 animate-scale-in">
+        <a 
+          href={linkUrl}
+          className={`block relative rounded-lg overflow-hidden transition-all duration-300 hover:scale-105 hover:z-10 bg-cover bg-center ${usePoster ? 'aspect-[2/3] w-40 md:w-auto' : 'aspect-video'}`}
           style={{ backgroundImage: `url(${getTmdbImage(imagePath, 'w500')})` }}
-          onClick={handleClick}
         > 
           {showOverlay && (
             <div className="absolute inset-0 flex items-center justify-center">
@@ -162,7 +159,7 @@ const CarouselItem = ({ item, variant = 'default', episodeNumber, usePoster = fa
               style={{ width: `${progressPercent}%` }}
             ></div>
           </div>
-        </div>
+        </a>
       </div>
     );
   }
@@ -172,7 +169,7 @@ const CarouselItem = ({ item, variant = 'default', episodeNumber, usePoster = fa
   
   if (variant === 'grid') {
     return (
-      <div className="w-full cursor-pointer transition-all duration-300 hover:scale-105" onClick={handleClick}>
+      <a href={linkUrl} className="block w-full transition-all duration-300 hover:scale-105">
         <div className="relative rounded-lg overflow-hidden aspect-video">
           {isUsingPosterFallback ? (
             <img 
@@ -227,14 +224,16 @@ const CarouselItem = ({ item, variant = 'default', episodeNumber, usePoster = fa
             </div>
           )}
         </div>
-      </div>
+      </a>
     );
   }
   
   return (
-    <div className={`relative rounded-lg overflow-hidden transition-all duration-300 hover:scale-105 hover:z-10 bg-cover bg-center cursor-pointer ${usePoster ? 'aspect-[2/3] w-40 md:w-auto' : 'aspect-video'}`}
-         style={{ backgroundImage: `url(${getTmdbImage(imagePath, 'w500')})` }}
-         onClick={handleClick}>
+    <a 
+      href={linkUrl}
+      className={`block relative rounded-lg overflow-hidden transition-all duration-300 hover:scale-105 hover:z-10 bg-cover bg-center ${usePoster ? 'aspect-[2/3] w-40 md:w-auto' : 'aspect-video'}`}
+      style={{ backgroundImage: `url(${getTmdbImage(imagePath, 'w500')})` }}
+    >
       
       {showOverlay && (
         <div className="absolute inset-0 flex items-center justify-center">
@@ -268,7 +267,7 @@ const CarouselItem = ({ item, variant = 'default', episodeNumber, usePoster = fa
           <div className="w-4 h-4 border-2 border-white border-solid border-t-transparent rounded-full animate-spin"></div>
         </div>
       )}
-    </div>
+    </a>
   );
 };
 

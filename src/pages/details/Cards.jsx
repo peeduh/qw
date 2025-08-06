@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
 import { getTmdbImage } from '../../utils.jsx';
 import { Play, ChevronDown } from 'lucide-react';
 import CarouselItem from '../../components/carouselItem.jsx';
@@ -69,16 +68,10 @@ export const TrailerCard = ({ video, variant = 'default' }) => {
 };
 
 export const CastCard = ({ person }) => {
-  const navigate = useNavigate();
-  
-  const handleClick = () => {
-    navigate(`/person/${person.id}`);
-  };
-
   return (
-    <div 
-      onClick={handleClick}
-      className="flex-shrink-0 w-40 cursor-pointer animate-scale-in text-center transition-all !duration-300 !ease hover:scale-110 hover:z-10"
+    <a 
+      href={`/person/${person.id}`}
+      className="block flex-shrink-0 w-40 animate-scale-in text-center transition-all !duration-300 !ease hover:scale-110 hover:z-10"
     >
       <div className="relative rounded-full overflow-hidden mb-2 aspect-square bg-cover bg-center w-32 h-32 mx-auto"
            style={{ backgroundImage: `url(${getTmdbImage(person.profile_path, 'w185')})` }}>
@@ -90,21 +83,12 @@ export const CastCard = ({ person }) => {
       </div>
       <h3 className="text-white font-normal text-sm mb-1 line-clamp-2">{person.name}</h3>
       <p className="text-neutral-400 text-xs line-clamp-2">{person.character || person.job}</p>
-    </div>
+    </a>
   );
 };
 
 export const MediaCard = ({ item, variant = 'grid' }) => {
-  const [isMobile, setIsMobile] = useState(false);
-  
-  useEffect(() => {
-    const checkMobile = () => { setIsMobile(window.innerWidth < 768); };
-    
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   
   if (variant === 'grid') {
     return (
