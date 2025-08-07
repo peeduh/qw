@@ -3,8 +3,10 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Search as SearchIcon, X } from 'lucide-react';
 import { fetchTmdb } from '../utils.jsx';
 
-const QuickSearch = () => {
-  const [isOpen, setIsOpen] = useState(false);
+const QuickSearch = ({ isOpen: externalIsOpen, onOpenChange }) => {
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
+  const isOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen;
+  const setIsOpen = onOpenChange || setInternalIsOpen;
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -42,7 +44,7 @@ const QuickSearch = () => {
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, searchResults, location.pathname]);
+  }, [isOpen, searchResults, location.pathname, setIsOpen]);
 
   // Focus input when opened
   useEffect(() => {
@@ -86,7 +88,11 @@ const QuickSearch = () => {
       
       // filter out people and, limit to 20 results
       const filteredResults = data.results
-        .filter(item => item.media_type === 'movie' || item.media_type === 'tv')
+        .filter(item => 
+          (item.media_type === 'movie' || item.media_type === 'tv') &&
+          item.vote_average > 0.0 &&
+          item.vote_count >= 3
+        )
         .slice(0, 20);
       
       setSearchResults(filteredResults);

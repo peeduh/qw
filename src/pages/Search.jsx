@@ -43,7 +43,9 @@ const Search = () => {
       
       // Filter out people and only keep movies and TV shows
       const filteredResults = data.results.filter(item => 
-        item.media_type === 'movie' || item.media_type === 'tv'
+        (item.media_type === 'movie' || item.media_type === 'tv') &&
+        item.vote_average > 0.0 &&
+        item.vote_count >= 3
       );
       
       setSearchResults(filteredResults);

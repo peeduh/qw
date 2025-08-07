@@ -169,105 +169,117 @@ const CarouselItem = ({ item, variant = 'default', episodeNumber, usePoster = fa
   
   if (variant === 'grid') {
     return (
-      <a href={linkUrl} className="block w-full transition-all duration-300 hover:scale-105">
-        <div className="relative rounded-lg overflow-hidden aspect-video">
-          {isUsingPosterFallback ? (
-            <img 
-              src={getTmdbImage(imagePath, 'w500')} 
-              alt={title}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div 
-              className="w-full h-full bg-cover bg-center"
-              style={{ backgroundImage: `url(${getTmdbImage(imagePath, 'w500')})` }}
-            />
-          )}
-          
-          {showOverlay && !isUsingPosterFallback && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              {logoPath ? (
-                <img src={getTmdbImage(logoPath, 'w300')} alt={title} className="w-[70%] max-h-[60%] object-contain drop-shadow-[0_4px_8px_#000]" />
-              ) : (
-                <h2 className="text-white text-xl font-medium text-center px-4 drop-shadow-[0_4px_8px_#000]">{title}</h2>
-              )}
-            </div>
-          )}
-          
-          <div className="absolute inset-0 bg-black/70 opacity-0 hover:opacity-100 transition-opacity duration-300 p-3 flex flex-col justify-end items-start">
-            <h3 className="text-white font-normal text-lg mb-2 line-clamp-2">{title}</h3>
-            <div className="flex items-center justify-between w-full">
-              <div className="flex items-center gap-1 text-xs text-white font-normal">
-                <div className="bg-gradient-to-r from-[#90cea1] to-[#01b4e4] text-black px-1 py-[1px] rounded font-black tracking-tighter text-xs">TMDB</div>
-                <span>{rating}</span>
-                <span>•</span>
-                <span>{formattedDate}</span>
-                {runtime && (
-                  <>
-                    <span>•</span>
-                    <span>{runtime}</span>
-                  </>
+      <div className="w-full relative transition-all duration-300 hover:scale-105">
+        <a href={linkUrl} className="block">
+          <div className="relative rounded-lg overflow-hidden aspect-video">
+            {isUsingPosterFallback ? (
+              <img 
+                src={getTmdbImage(imagePath, 'w500')} 
+                alt={title}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div 
+                className="w-full h-full bg-cover bg-center"
+                style={{ backgroundImage: `url(${getTmdbImage(imagePath, 'w500')})` }}
+              />
+            )}
+            
+            {showOverlay && !isUsingPosterFallback && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                {logoPath ? (
+                  <img src={getTmdbImage(logoPath, 'w300')} alt={title} className="w-[70%] max-h-[60%] object-contain drop-shadow-[0_4px_8px_#000]" />
+                ) : (
+                  <h2 className="text-white text-xl font-medium text-center px-4 drop-shadow-[0_4px_8px_#000]">{title}</h2>
                 )}
               </div>
-              <button 
-                onClick={handleWatchlistToggle}
-                className={`text-white p-1 rounded-full transition-all cursor-pointer ${inWatchlist ? 'bg-white/25' : 'bg-white/15 hover:bg-white/25'}`}
-              >
-                <Plus className="w-3 h-3" />
-              </button>
+            )}
+            
+            <div className="absolute inset-0 bg-black/70 opacity-0 hover:opacity-100 transition-opacity duration-300 p-3 flex flex-col justify-end items-start">
+              <h3 className="text-white font-normal text-lg mb-2 line-clamp-2">{title}</h3>
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-1 text-xs text-white font-normal">
+                  <div className="bg-gradient-to-r from-[#90cea1] to-[#01b4e4] text-black px-1 py-[1px] rounded font-black tracking-tighter text-xs">TMDB</div>
+                  <span>{rating}</span>
+                  <span>•</span>
+                  <span>{formattedDate}</span>
+                  {runtime && (
+                    <>
+                      <span>•</span>
+                      <span>{runtime}</span>
+                    </>
+                  )}
+                </div>
+                <div className="w-6 h-6"></div> {/* Spacer for button */}
+              </div>
             </div>
+            
+            {loading && (
+              <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                <div className="w-4 h-4 border-2 border-white border-solid border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            )}
           </div>
-          
-          {loading && (
-            <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-              <div className="w-4 h-4 border-2 border-white border-solid border-t-transparent rounded-full animate-spin"></div>
-            </div>
-          )}
-        </div>
-      </a>
+        </a>
+        
+        {/* Watchlist button positioned outside the anchor */}
+        <button 
+          onClick={handleWatchlistToggle}
+          className={`absolute bottom-3 right-3 text-white p-1 rounded-full transition-all cursor-pointer z-10 opacity-0 hover:opacity-100 group-hover:opacity-100 ${inWatchlist ? 'bg-white/25' : 'bg-white/15 hover:bg-white/25'}`}
+          style={{ opacity: 1 }}
+        >
+          <Plus className="w-3 h-3" />
+        </button>
+      </div>
     );
   }
   
   return (
-    <a 
-      href={linkUrl}
-      className={`block relative rounded-lg overflow-hidden transition-all duration-300 hover:scale-105 hover:z-10 bg-cover bg-center ${usePoster ? 'aspect-[2/3] w-40 md:w-auto' : 'aspect-video'}`}
-      style={{ backgroundImage: `url(${getTmdbImage(imagePath, 'w500')})` }}
-    >
-      
-      {showOverlay && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          {logoPath ? (<img src={getTmdbImage(logoPath, 'w300')} alt={title} className="w-[70%] max-h-[60%] object-contain drop-shadow-[0_4px_8px_#000]" />
-          ) : (<h2 className="text-white text-3xl font-medium text-center px-4 drop-shadow-[0_4px_8px_#000]">{title}</h2>)}
-        </div>
-      )}
-      
-      <div className="absolute inset-0 bg-black/70 opacity-0 hover:opacity-100 transition-opacity duration-300 p-4 flex flex-col justify-end items-start">
-        <h3 className="text-white font-normal text-2xl mb-2 line-clamp-2">{title}</h3>
-        <div className="flex items-center justify-between w-full">
-          <div className="flex items-center gap-2 text-sm text-white font-normal">
-            <div className="bg-gradient-to-r from-[#90cea1] to-[#01b4e4] text-black px-1 py-[1px] rounded font-black tracking-tighter text-xs">TMDB</div>
-            <span>{rating}</span>
-            <span>•</span>
-            <span>{formattedDate}</span>
-            <span>•</span>
-            <span>{runtime}</span>
+    <div className={`relative transition-all duration-300 hover:scale-105 hover:z-10 ${usePoster ? 'aspect-[2/3] w-40 md:w-auto' : 'aspect-video'}`}>
+      <a 
+        href={linkUrl}
+        className="block rounded-lg overflow-hidden bg-cover bg-center w-full h-full"
+        style={{ backgroundImage: `url(${getTmdbImage(imagePath, 'w500')})` }}
+      >
+        
+        {showOverlay && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            {logoPath ? (<img src={getTmdbImage(logoPath, 'w300')} alt={title} className="w-[70%] max-h-[60%] object-contain drop-shadow-[0_4px_8px_#000]" />
+            ) : (<h2 className="text-white text-3xl font-medium text-center px-4 drop-shadow-[0_4px_8px_#000]">{title}</h2>)}
           </div>
-          <button 
-            onClick={handleWatchlistToggle}
-            className={`text-white p-1.5 rounded-full transition-all cursor-pointer ${inWatchlist ? 'bg-white/25' : 'bg-white/15 hover:bg-white/25'}`}
-          >
-            <Plus className="w-4 h-4" />
-          </button>
+        )}
+        
+        <div className="absolute inset-0 bg-black/70 opacity-0 hover:opacity-100 transition-opacity duration-300 p-4 flex flex-col justify-end items-start">
+          <h3 className="text-white font-normal text-2xl mb-2 line-clamp-2">{title}</h3>
+          <div className="flex items-center justify-between w-full">
+            <div className="flex items-center gap-2 text-sm text-white font-normal">
+              <div className="bg-gradient-to-r from-[#90cea1] to-[#01b4e4] text-black px-1 py-[1px] rounded font-black tracking-tighter text-xs">TMDB</div>
+              <span>{rating}</span>
+              <span>•</span>
+              <span>{formattedDate}</span>
+              <span>•</span>
+              <span>{runtime}</span>
+            </div>
+            <div className="w-6 h-6"></div> {/* Spacer for button */}
+          </div>
         </div>
-      </div>
+        
+        {loading && (
+          <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+            <div className="w-4 h-4 border-2 border-white border-solid border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        )}
+      </a>
       
-      {loading && (
-        <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-          <div className="w-4 h-4 border-2 border-white border-solid border-t-transparent rounded-full animate-spin"></div>
-        </div>
-      )}
-    </a>
+      {/* Watchlist button positioned outside the anchor */}
+      <button 
+        onClick={handleWatchlistToggle}
+        className={`absolute bottom-4 right-4 text-white p-1.5 rounded-full transition-all cursor-pointer z-10 opacity-0 hover:opacity-100 group-hover:opacity-100 ${inWatchlist ? 'bg-white/25' : 'bg-white/15 hover:bg-white/25'}`}
+        style={{ opacity: 1 }}
+      >
+        <Plus className="w-4 h-4" />
+      </button>
+    </div>
   );
 };
 
