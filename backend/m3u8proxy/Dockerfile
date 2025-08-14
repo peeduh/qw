@@ -20,8 +20,8 @@ RUN npm run build
 # Set environment variables with defaults
 ENV HOST=0.0.0.0
 ENV PORT=3030
-ENV PUBLIC_URL=https://p.quickwatch.co
-ENV CORSANYWHERE_WHITELIST=http://localhost:5173,http://localhost:5174,https://quickwatch.co,http://192.168.1.8:5173
+ENV PUBLIC_URL=https://p.flix99.netlify.app
+ENV CORSANYWHERE_WHITELIST=http://localhost:5173,http://localhost:5174,https://quickwatch.co,http://192.168.1.8:5173,https://flix99.netlify.app
 
 # Expose the port the app runs on
 EXPOSE 3030
