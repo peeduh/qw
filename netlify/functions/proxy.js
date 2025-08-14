@@ -1,35 +1,71 @@
 // netlify/functions/proxy.js
 export async function handler(event) {
-  const params = new URLSearchParams(event.rawQuery || "");
-  const target = params.get("url");
+  // Handle CORS preflight quickly
+  if (event.httpMethod === "OPTIONS") {
+    return {
+      statusCode: 204,
+      headers: {
+        "access-control-allow-origin": "*",
+        "access-control-allow-headers": "*",
+        "access-control-allow-methods": "GET,HEAD,POST,OPTIONS",
+      },
+    };
+  }
+
+  // 1) Try query param ?url=
+  let urlParam = null;
+  try {
+    const params = new URLSearchParams(event.rawQuery || "");
+    urlParam = params.get("url");
+  } catch {}
+
+  // 2) Or accept path-style: /proxy/<encoded-url> (splat forwarded by netlify.toml)
+  let pathTarget = null;
+  const path = event.path || "";
+  const after = path.split("/.netlify/functions/proxy/")[1]    // when called directly
+            || path.split("/proxy/")[1];                       // when called via pretty path
+  if (after) {
+    try { pathTarget = decodeURIComponent(after); } catch { pathTarget = after; }
+  }
+
+  const target = urlParam || pathTarget;
   if (!target) {
-    return { statusCode: 400, body: "Missing ?url=" };
+    return { statusCode: 400, body: "Missing target URL" };
   }
 
   let upstream;
   try {
     upstream = await fetch(target, {
       method: event.httpMethod,
-      headers: event.headers,
+      headers: sanitizeHeaders(event.headers),
       body: ["GET", "HEAD"].includes(event.httpMethod) ? undefined : event.body,
     });
-  } catch (err) {
-    return { statusCode: 502, body: "Upstream fetch failed." };
+  } catch (e) {
+    return { statusCode: 502, body: "Upstream fetch failed" };
   }
 
   const headers = Object.fromEntries(upstream.headers.entries());
-  // Allow your frontend to read the response
   headers["access-control-allow-origin"] = "*";
   headers["access-control-allow-headers"] = "*";
   headers["access-control-allow-methods"] = "GET,HEAD,POST,OPTIONS";
 
-  const arrayBuf = await upstream.arrayBuffer();
-  const body = Buffer.from(arrayBuf).toString("base64");
-
+  const buf = Buffer.from(await upstream.arrayBuffer());
   return {
     statusCode: upstream.status,
     headers,
-    body,
-    isBase64Encoded: true, // lets binary (m3u8/ts/m4s) pass through safely
+    body: buf.toString("base64"),
+    isBase64Encoded: true,
   };
+}
+
+// Optional: remove hop-by-hop headers that can cause issues
+function sanitizeHeaders(h = {}) {
+  const bad = new Set([
+    "connection","transfer-encoding","content-length","host","accept-encoding",
+  ]);
+  const out = {};
+  for (const [k, v] of Object.entries(h || {})) {
+    if (!bad.has(k.toLowerCase())) out[k] = v;
+  }
+  return out;
 }
