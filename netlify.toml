@@ -3,15 +3,13 @@
   publish = "dist"
   functions = "netlify/functions"
 
-# Map pretty paths to the functions AND forward the splat
+# Pretty paths to functions (query-string supported)
 [[redirects]]
-  from = "/proxy/*"
-  to = "/.netlify/functions/proxy/:splat"
+  from = "/proxy"
+  to = "/.netlify/functions/proxy"
   status = 200
-  force = true
 
 [[redirects]]
-  from = "/m3u8/*"
-  to = "/.netlify/functions/m3u8proxy/:splat"
+  from = "/m3u8"
+  to = "/.netlify/functions/m3u8proxy"
   status = 200
-  force = true

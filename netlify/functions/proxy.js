@@ -1,6 +1,16 @@
-// netlify/functions/proxy.js
-export async function handler(event) {
-  // Handle CORS preflight quickly
+// CommonJS version so it runs regardless of your package.json "type"
+const BAD = new Set(["connection","transfer-encoding","content-length","host","accept-encoding"]);
+
+function sanitizeHeaders(h = {}) {
+  const out = {};
+  for (const [k, v] of Object.entries(h || {})) {
+    if (!BAD.has(k.toLowerCase())) out[k] = v;
+  }
+  return out;
+}
+
+exports.handler = async function (event) {
+  // CORS preflight
   if (event.httpMethod === "OPTIONS") {
     return {
       statusCode: 204,
@@ -12,25 +22,15 @@ export async function handler(event) {
     };
   }
 
-  // 1) Try query param ?url=
-  let urlParam = null;
+  // We’ll support only query style: /proxy?url=<encoded>
+  let target = null;
   try {
     const params = new URLSearchParams(event.rawQuery || "");
-    urlParam = params.get("url");
-  } catch {}
+    target = params.get("url");
+  } catch (_) {}
 
-  // 2) Or accept path-style: /proxy/<encoded-url> (splat forwarded by netlify.toml)
-  let pathTarget = null;
-  const path = event.path || "";
-  const after = path.split("/.netlify/functions/proxy/")[1]    // when called directly
-            || path.split("/proxy/")[1];                       // when called via pretty path
-  if (after) {
-    try { pathTarget = decodeURIComponent(after); } catch { pathTarget = after; }
-  }
-
-  const target = urlParam || pathTarget;
   if (!target) {
-    return { statusCode: 400, body: "Missing target URL" };
+    return { statusCode: 400, body: "Missing ?url=" };
   }
 
   let upstream;
@@ -38,7 +38,7 @@ export async function handler(event) {
     upstream = await fetch(target, {
       method: event.httpMethod,
       headers: sanitizeHeaders(event.headers),
-      body: ["GET", "HEAD"].includes(event.httpMethod) ? undefined : event.body,
+      body: ["GET","HEAD"].includes(event.httpMethod) ? undefined : event.body,
     });
   } catch (e) {
     return { statusCode: 502, body: "Upstream fetch failed" };
@@ -56,16 +56,4 @@ export async function handler(event) {
     body: buf.toString("base64"),
     isBase64Encoded: true,
   };
-}
-
-// Optional: remove hop-by-hop headers that can cause issues
-function sanitizeHeaders(h = {}) {
-  const bad = new Set([
-    "connection","transfer-encoding","content-length","host","accept-encoding",
-  ]);
-  const out = {};
-  for (const [k, v] of Object.entries(h || {})) {
-    if (!bad.has(k.toLowerCase())) out[k] = v;
-  }
-  return out;
-}
+};

@@ -1,1 +1,3 @@
-export { handler } from "./proxy.js";
+// Reuse the same handler
+const proxy = require("./proxy.js");
+exports.handler = proxy.handler;
