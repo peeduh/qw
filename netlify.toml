@@ -1,0 +1,17 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+  functions = "netlify/functions"
+
+# Map nice paths to your functions
+[[redirects]]
+  from = "/proxy/*"
+  to = "/.netlify/functions/proxy"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/m3u8/*"
+  to = "/.netlify/functions/m3u8proxy"
+  status = 200
+  force = true
